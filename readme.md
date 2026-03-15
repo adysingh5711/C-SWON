@@ -38,14 +38,15 @@ flowchart TD
     classDef miner   fill:#b45309,stroke:#fcd34d,color:#fff
     classDef formula fill:#065f46,stroke:#6ee7b7,color:#fff
 ```
-| Variable | Unit      | Definition                                                               |
-| -------- | --------- | ------------------------------------------------------------------------ |
-| R_i  | TAO       | Reward allocated to miner i per block                                    |
-| E      | TAO/block | Total subnet emissions per block — split 18% validators, 82% miners      |
-| W_i  | float     | Stake-weighted score for miner i across all evaluating validators        |
-| W_j  | float     | Score for all miners j — denominator that normalizes the weight fraction |
-| i      | int       | Index variable pointing to the specific miner receiving rewards          |
-| j      | int       | Iterator over all active miners in the summation denominator             |
+
+| Variable | Unit      | Definition                                                                |
+| -------- | --------- | ------------------------------------------------------------------------- |
+| R_i      | TAO       | Reward allocated to miner i per block                                     |
+| E        | TAO/block | Total subnet emissions per block — split 18% validators, 82% miners      |
+| W_i      | float     | Stake-weighted score for miner i across all evaluating validators         |
+| W_j      | float     | Score for all miners j — denominator that normalizes the weight fraction |
+| i        | int       | Index variable pointing to the specific miner receiving rewards           |
+| j        | int       | Iterator over all active miners in the summation denominator              |
 
 Unlike winner-takes-all models, C-SWON uses a proportional emission system. This rewards a broader spectrum of high-quality miners, encourages diverse workflow strategies, and avoids centralization of rewards around a single dominant approach.
 
@@ -57,12 +58,12 @@ Every workflow a miner submits is executed in a sandboxed environment by validat
 S = 0.50 × S_success + 0.25 × S_cost + 0.15 × S_latency + 0.10 × S_reliability
 ```
 
-| Dimension | Weight | What It Measures |
-|---|---|---|
-| **Task Success** | 50% | Does the workflow output meet all defined quality criteria? |
-| **Cost Efficiency** | 25% | Actual TAO spent vs. the task's budget constraint *(only rewarded if success > 0.7)* |
-| **Latency** | 15% | Total execution time vs. the task's latency constraint |
-| **Reliability** | 10% | Penalizes excessive retries, timeouts, and hard failures |
+| Dimension                 | Weight | What It Measures                                                                      |
+| ------------------------- | ------ | ------------------------------------------------------------------------------------- |
+| **Task Success**    | 50%    | Does the workflow output meet all defined quality criteria?                           |
+| **Cost Efficiency** | 25%    | Actual TAO spent vs. the task's budget constraint*(only rewarded if success > 0.7)* |
+| **Latency**         | 15%    | Total execution time vs. the task's latency constraint                                |
+| **Reliability**     | 10%    | Penalizes excessive retries, timeouts, and hard failures                              |
 
 The **success-first gating** on cost is a deliberate design choice: a workflow that fails the task cannot be considered "good" regardless of how cheap or fast it is. This enforces the correct priority ordering and prevents cheap-but-wrong strategies from earning rewards.
 
@@ -182,12 +183,12 @@ The miner's core task is **workflow policy design**. Given a structured task pac
 
 Miners are evaluated across four axes, which together determine reward weights:
 
-| Dimension | Weight | How It Is Measured |
-|---|---|---|
-| **Task Success** | 50% | Does the final workflow output satisfy all defined quality criteria? |
-| **Cost Efficiency** | 25% | Actual TAO spent vs. the budget constraint *(gated: only scored if success > 0.7)* |
-| **Latency** | 15% | Total wall-clock execution time vs. the target latency |
-| **Reliability** | 10% | Penalty per retry, timeout, and hard failure in the execution trace |
+| Dimension                 | Weight | How It Is Measured                                                                  |
+| ------------------------- | ------ | ----------------------------------------------------------------------------------- |
+| **Task Success**    | 50%    | Does the final workflow output satisfy all defined quality criteria?                |
+| **Cost Efficiency** | 25%    | Actual TAO spent vs. the budget constraint*(gated: only scored if success > 0.7)* |
+| **Latency**         | 15%    | Total wall-clock execution time vs. the target latency                              |
+| **Reliability**     | 10%    | Penalty per retry, timeout, and hard failure in the execution trace                 |
 
 Three additional dimensions are tracked but not yet weighted in emissions, they serve as signals for future scoring evolution:
 
@@ -259,21 +260,21 @@ These problems compound: each new subnet that joins Bittensor *increases* the or
 
 **Within Bittensor:**
 
-| Solution | What It Does | Why C-SWON Is Different |
-|---|---|---|
-| **Manual Integration** | Developers call subnets directly via API | C-SWON automates optimal routing through competition; no bespoke integration code required |
-| **Bittensor API Layer** *(in development)* | Provides unified API access to subnets | Solves interop infrastructure, not routing intelligence; C-SWON sits on top |
-| **Agent Subnets (SN6, etc.)** | Build agents that use tools | Agents *consume* the orchestration layer; C-SWON provides the optimal strategies they use |
-| **Individual Subnet Routers** | Some subnets have internal load balancing | C-SWON operates *across* subnets, not within a single one |
+| Solution                                           | What It Does                              | Why C-SWON Is Different                                                                    |
+| -------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Manual Integration**                       | Developers call subnets directly via API  | C-SWON automates optimal routing through competition; no bespoke integration code required |
+| **Bittensor API Layer** *(in development)* | Provides unified API access to subnets    | Solves interop infrastructure, not routing intelligence; C-SWON sits on top                |
+| **Agent Subnets (SN6, etc.)**                | Build agents that use tools               | Agents*consume* the orchestration layer; C-SWON provides the optimal strategies they use |
+| **Individual Subnet Routers**                | Some subnets have internal load balancing | C-SWON operates*across* subnets, not within a single one                                 |
 
 **Outside Bittensor:**
 
-| Solution | Strengths | Limitations vs. C-SWON |
-|---|---|---|
-| **LangChain / LlamaIndex** | Popular, large community | Centralized; no incentivized optimization; developers still write routing logic manually |
-| **OpenAI Assistants API** | Tight integration, easy to use | Locked to OpenAI models; no composability with external AI providers |
-| **Zapier / Make.com** | No-code, accessible | Not AI-native; no ML model orchestration; no competitive optimization |
-| **AWS Step Functions** | Reliable state machines | Generic infrastructure; no AI intelligence; expensive at scale; vendor lock-in |
+| Solution                         | Strengths                      | Limitations vs. C-SWON                                                                   |
+| -------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------- |
+| **LangChain / LlamaIndex** | Popular, large community       | Centralized; no incentivized optimization; developers still write routing logic manually |
+| **OpenAI Assistants API**  | Tight integration, easy to use | Locked to OpenAI models; no composability with external AI providers                     |
+| **Zapier / Make.com**      | No-code, accessible            | Not AI-native; no ML model orchestration; no competitive optimization                    |
+| **AWS Step Functions**     | Reliable state machines        | Generic infrastructure; no AI intelligence; expensive at scale; vendor lock-in           |
 
 ### Why Bittensor Is Ideal for This Use Case
 
@@ -302,6 +303,7 @@ Introduce per-workflow fees (e.g., +5% on total TAO workflow cost), split as 70%
 C-SWON becomes the default orchestration layer for all multi-subnet applications. Integration with Bittensor's official API gateway. Subnet collaboration incentives: high-performing subnet pairs earn bonus emissions.
 
 **Illustrative Revenue Projection (Month 12):**
+
 ```
 100K workflows/day × 30 days × 0.0015τ fee × $500/TAO = $2.25M/month
 
@@ -377,14 +379,14 @@ sequenceDiagram
 
 ### Risk Register
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| **Low miner participation** | Network fails to bootstrap | Early emission multipliers, GPU credit partnerships, $50K miner grants pool |
-| **Validator centralization** | Collusion risk | Stake matching for first 10 validators, open documentation, cross-validator audits |
-| **Benchmark staleness** | Miners overfit to static tasks | Dynamic rotation, community-contributed tasks, quarterly refreshes |
-| **Competing orchestration layer** | Market fragmentation | First-mover advantage, deep Bittensor API integration, strong network effects |
-| **Insufficient subnet diversity** | Limited workflow variety | Actively recruit subnets; position C-SWON as a usage driver for their subnet |
-| **High execution costs** | Developers avoid C-SWON | Cost optimization baked into scoring; subsidize early usage; publish ROI case studies |
+| Risk                                    | Impact                         | Mitigation                                                                            |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| **Low miner participation**       | Network fails to bootstrap     | Early emission multipliers, GPU credit partnerships, $50K miner grants pool           |
+| **Validator centralization**      | Collusion risk                 | Stake matching for first 10 validators, open documentation, cross-validator audits    |
+| **Benchmark staleness**           | Miners overfit to static tasks | Dynamic rotation, community-contributed tasks, quarterly refreshes                    |
+| **Competing orchestration layer** | Market fragmentation           | First-mover advantage, deep Bittensor API integration, strong network effects         |
+| **Insufficient subnet diversity** | Limited workflow variety       | Actively recruit subnets; position C-SWON as a usage driver for their subnet          |
+| **High execution costs**          | Developers avoid C-SWON        | Cost optimization baked into scoring; subsidize early usage; publish ROI case studies |
 
 ---
 
@@ -405,27 +407,30 @@ Three anchor use cases demonstrate the value proposition concretely:
 ### Distribution Channels
 
 **Technical:**
+
 - `bittensor-cswon` TypeScript/Python SDK - one-line integration: `cswon.execute("task", constraints)`
 - Bittensor API Gateway partnership for "recommended orchestration" placement
 - Pre-built integrations for Targon, Nous, and LangChain Bittensor connectors
 
 **Community:**
+
 - Developer tutorials: "Build a production AI pipeline in 10 minutes with C-SWON"
 - Hackathon bounties: $50K prize pool across three events in Months 3, 6, and 9
 - Research publications: benchmark studies comparing C-SWON vs. manual orchestration
 
 **Partnerships:**
+
 - Revenue share with subnets called via C-SWON workflows (5% of fees routed back to subnet)
 - Enterprise pilot program: 5–10 companies with white-glove onboarding in the first 90 days
 
 ### Early Participation Incentives
 
-| Stakeholder | Incentive |
-|---|---|
-| **Miners (first 50)** | 1.5× emission multiplier for first 6 months + GPU credits ($500–$1,000) + $50K grants pool |
+| Stakeholder                     | Incentive                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Miners (first 50)**     | 1.5× emission multiplier for first 6 months + GPU credits ($500–$1,000) + $50K grants pool           |
 | **Validators (first 10)** | 2:1 TAO stake match (up to 1,000 TAO) + $20K benchmark dataset grants + elevated DAO governance voting |
-| **Developers** | First 10,000 workflows free per project + $500–$2,000 migration bounty from manual orchestration |
-| **Subnet Partners** | 5% traffic revenue share from C-SWON fees + $10K co-marketing budget per partnered subnet |
+| **Developers**            | First 10,000 workflows free per project + $500–$2,000 migration bounty from manual orchestration      |
+| **Subnet Partners**       | 5% traffic revenue share from C-SWON fees + $10K co-marketing budget per partnered subnet              |
 
 ---
 
@@ -433,6 +438,10 @@ Three anchor use cases demonstrate the value proposition concretely:
 
 > *"Bittensor has 100+ specialized AI services, but no brain to wire them together. C-SWON is that brain-a subnet where the commodity is optimal orchestration policy. We turn 'which subnets to call and how' into a competitive intelligence market, making Bittensor the world's first truly composable AI operating system. This isn't just another subnet-it's the meta-layer that makes all other subnets exponentially more valuable."*
 
-**GitHub:** [https://github.com/adysingh5711/C-SWON](https://github.com/adysingh5711/C-SWON) · **Demo:** Architecture Walkthrough · **Whitepaper:** Upcoming
+> **GitHub:** [https://github.com/adysingh5711/C-SWON](https://github.com/adysingh5711/C-SWON) · 
+> **Demo:** [https://youtu.be/X2RZts7AXX0](https://youtu.be/X2RZts7AXX0) · 
+> **Hackathon Link:** [https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon](https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon) · 
+> **Results:** [https://x.com/singhaditya5711/status/2030662024922071367?s=20](https://x.com/singhaditya5711/status/2030662024922071367?s=20) · 
+> **Whitepaper:** Upcoming
 
 *C-SWON: Cross-Subnet Workflow Orchestration Network - Making Bittensor Composable*
