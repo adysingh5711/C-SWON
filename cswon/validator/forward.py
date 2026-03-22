@@ -76,7 +76,6 @@ TEMPORAL_AUDIT_WINDOW = 3
 
 _benchmark_cache = None
 _synthetic_cache: List[dict] = []
-_lifecycle_tracker: Optional[BenchmarkLifecycleTracker] = None
 
 _tasks_executed_this_tempo: int = 0
 _last_lifecycle_tempo: int = -1
@@ -145,13 +144,6 @@ def _get_benchmark_tasks() -> List[dict]:
             f"{len(_synthetic_cache)} synthetic tasks"
         )
     return _benchmark_cache
-
-
-def _get_lifecycle_tracker() -> BenchmarkLifecycleTracker:
-    global _lifecycle_tracker
-    if _lifecycle_tracker is None:
-        _lifecycle_tracker = BenchmarkLifecycleTracker()
-    return _lifecycle_tracker
 
 
 # ── Synthetic Injection (readme §2.5, issue 1.4) ─────────────────────────────
@@ -239,7 +231,7 @@ async def forward(self):
     _ensure_monitoring_server()
 
     benchmark_tasks = _get_benchmark_tasks()
-    tracker = _get_lifecycle_tracker()
+    tracker = self.lifecycle_tracker
 
     # ── Stage 1: Deterministic task selection ────────────────────────────────
     if not benchmark_tasks:

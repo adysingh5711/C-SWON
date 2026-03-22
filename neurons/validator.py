@@ -33,6 +33,7 @@ import bittensor as bt
 from cswon.base.validator import BaseValidatorNeuron
 from cswon.validator import forward
 from cswon.validator.reward import ScoreAggregator
+from cswon.validator.benchmark_lifecycle import BenchmarkLifecycleTracker
 
 
 class Validator(BaseValidatorNeuron):
@@ -49,6 +50,7 @@ class Validator(BaseValidatorNeuron):
         # Initialise the score aggregator BEFORE load_state() so restored data
         # is not silently discarded (fix 1.2 Bug B: init order correction).
         self.score_aggregator = ScoreAggregator()
+        self.lifecycle_tracker = BenchmarkLifecycleTracker()
 
         bt.logging.info("load_state()")
         self.load_state()

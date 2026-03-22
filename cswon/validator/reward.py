@@ -239,19 +239,34 @@ def _score_data_transform_quality(output: dict, reference: dict) -> float:
         return 0.5
 
     actual = output.get("text", "")
-    if isinstance(expected_output, str):
-        return 1.0 if actual.strip() == expected_output.strip() else 0.0
 
-    # For dict/structured comparison
-    if isinstance(expected_output, dict):
-        try:
-            import json
-            actual_parsed = json.loads(actual) if isinstance(actual, str) else actual
-            return 1.0 if actual_parsed == expected_output else 0.0
-        except (json.JSONDecodeError, TypeError):
-            return 0.0
+    # Try structural comparison first
+    try:
+        import json
+        actual_parsed = json.loads(actual) if isinstance(actual, str) else actual
+        if isinstance(expected_output, str):
+            expected_parsed = json.loads(expected_output)
+        else:
+            expected_parsed = expected_output
 
-    return 0.0
+        # Normalize: stringify all values for loose comparison
+        def _normalize(d):
+            if isinstance(d, dict):
+                return {str(k): str(v) for k, v in d.items()}
+            return d
+
+        if _normalize(actual_parsed) == _normalize(expected_parsed):
+            return 1.0
+        # Partial credit: count matching keys
+        if isinstance(actual_parsed, dict) and isinstance(expected_parsed, dict):
+            matches = sum(1 for k in expected_parsed if str(actual_parsed.get(k, "")) == str(expected_parsed[k]))
+            return matches / len(expected_parsed)
+        return 0.0
+    except (json.JSONDecodeError, TypeError, AttributeError):
+        # Last resort: string strip
+        import json
+        exp_str = expected_output if isinstance(expected_output, str) else json.dumps(expected_output)
+        return 1.0 if actual.strip() == exp_str.strip() else 0.0
 
 
 # ── Four-Dimension Composite Scoring (readme §2.2) ─────────────────
@@ -409,15 +424,20 @@ class ScoreAggregator:
         """
         Get normalised weights using Z-score and 15% per-miner cap (readme §4.8 step 6, Fix 5).
         """
-        import scipy.stats
-        
         raw_weights = {uid: self.get_average_score(uid) for uid in miner_uids}
-        scores = np.array(list(raw_weights.values()))
+        scores = np.array(list(raw_weights.values()), dtype=np.float64)
         
         if np.max(scores) == 0:
             return {uid: 0.0 for uid in miner_uids}
 
-        z_scores = scipy.stats.zscore(scores)
+        try:
+            from scipy.stats import zscore
+            z_scores = zscore(scores)
+        except ImportError:
+            # Manual z-score — no scipy required
+            mu, std = scores.mean(), scores.std()
+            z_scores = (scores - mu) / std if std > 0 else np.zeros_like(scores)
+
         # Shift to positive space
         shifted = z_scores - np.min(z_scores) + 1e-5
         normalized_vals = shifted / np.sum(shifted)

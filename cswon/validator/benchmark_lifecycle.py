@@ -217,3 +217,26 @@ class BenchmarkLifecycleTracker:
                     json.dump(tasks, f, indent=2)
             except IOError as e:
                 bt.logging.error(f"Failed to write benchmark lifecycle changes to {path}: {e}")
+
+    def save_state(self, path: str) -> None:
+        import json, pathlib
+        data = {
+            "tempo_history": {k: list(v) for k, v in self._tempo_history.items()},
+            "quarantine_duration": dict(self._quarantine_duration),
+            "last_quarterly_rotation_block": self._last_quarterly_rotation_block,
+        }
+        pathlib.Path(path).write_text(json.dumps(data))
+
+    def load_state(self, path: str) -> None:
+        import json, pathlib
+        from collections import deque
+        p = pathlib.Path(path)
+        if not p.exists():
+            return
+        data = json.loads(p.read_text())
+        maxlen = max(DEPRECATION_TEMPO_COUNT, QUARANTINE_REMOVAL_TEMPOS)
+        for k, v in data.get("tempo_history", {}).items():
+            self._tempo_history[k] = deque(v, maxlen=maxlen)
+        for k, v in data.get("quarantine_duration", {}).items():
+            self._quarantine_duration[k] = int(v)
+        self._last_quarterly_rotation_block = data.get("last_quarterly_rotation_block", -1)

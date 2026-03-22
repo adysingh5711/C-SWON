@@ -437,6 +437,14 @@ class BaseValidatorNeuron(BaseNeuron):
                 agg_path.write_text(json.dumps(agg_data))
             except IOError as e:
                 bt.logging.warning(f"Could not save ScoreAggregator state: {e}")
+                
+        # Persist BenchmarkLifecycleTracker (fix 3)
+        if hasattr(self, "lifecycle_tracker"):
+            lc_path = pathlib.Path(self.config.neuron.full_path) / "lifecycle_tracker.json"
+            try:
+                self.lifecycle_tracker.save_state(str(lc_path))
+            except Exception as e:
+                bt.logging.warning(f"Could not save BenchmarkLifecycleTracker state: {e}")
 
     def load_state(self):
         """Loads the state of the validator from a file, including ScoreAggregator (fix 1.2, fix 2.8)."""
@@ -471,3 +479,12 @@ class BaseValidatorNeuron(BaseNeuron):
                 )
             except Exception as e:
                 bt.logging.warning(f"Could not restore ScoreAggregator state: {e}")
+                
+        # Restore BenchmarkLifecycleTracker (fix 3)
+        if hasattr(self, "lifecycle_tracker"):
+            lc_path = pathlib.Path(self.config.neuron.full_path) / "lifecycle_tracker.json"
+            try:
+                self.lifecycle_tracker.load_state(str(lc_path))
+                bt.logging.info("BenchmarkLifecycleTracker state restored from disk.")
+            except Exception as e:
+                bt.logging.warning(f"Could not load BenchmarkLifecycleTracker state: {e}")

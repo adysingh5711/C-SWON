@@ -111,9 +111,11 @@ def _docker_execute(
         result = subprocess.run(
             [
                 "docker", "run", "--rm",
-                "--network=host",
-                "--memory=2g",
-                "--cpus=2",
+                "--network=none",          # no network access inside sandbox
+                "--memory=512m",           # tighter memory cap
+                "--cpus=1",
+                "--read-only",             # read-only filesystem
+                "--tmpfs=/tmp:size=64m",   # only allow writes to /tmp
                 f"--env=CSWON_MOCK_EXEC=false",
                 f"--env=CSWON_PARTNER_HOTKEY={partner_hotkey or ''}",
                 f"--env=CSWON_WORKFLOW_PAYLOAD={payload}",

@@ -84,7 +84,7 @@ class SubnetProfiler:
             axon = metagraph.axons[uid]
             if not axon.is_serving:
                 continue
-            subnet_id = f"SN{uid}"
+            subnet_id = f"sn{uid}"
             t0 = time.time()
             try:
                 # Lightweight TCP connect probe — measures reachability + round-trip
@@ -114,11 +114,12 @@ class SubnetProfiler:
         Call this after each executor step completes to build local history.
 
         Args:
-            subnet_id: The subnet identifier (e.g. "SN1", "SN62").
+            subnet_id: The subnet identifier (e.g. "sn1", "sn62").
             cost: Actual TAO cost of this call.
             latency: Wall-clock seconds for this call.
             success: Whether the call succeeded.
         """
+        subnet_id = subnet_id.lower()
         self._cost_history[subnet_id].append(cost)
         self._latency_history[subnet_id].append(latency)
         self._reliability_history[subnet_id].append(success)
