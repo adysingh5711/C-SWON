@@ -66,20 +66,62 @@ def score_output_quality(
 
 def _score_code_quality(code_output: str, reference: dict) -> float:
     """
-    Code quality: automated test pass rate + PEP8 linting score (readme §2.3).
-    For mock mode, uses a simplified check.
+    Code quality: automated test pass rate + PEP8 linting (readme §2.3, issue 2.5).
+    Runs pytest and pycodestyle in a subprocess for real scoring.
+    Falls back to pattern-matching if tools unavailable.
     """
+    import pathlib, subprocess, tempfile
+
     if not code_output:
         return 0.0
 
-    # In mock mode: check if code is non-empty and contains expected patterns
+    test_suite = reference.get("test_suite", "")
     expected_patterns = reference.get("expected_patterns", [])
-    if not expected_patterns:
-        # No patterns to check — give partial credit for non-empty code
-        return 0.5
 
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            code_file = pathlib.Path(tmpdir) / "solution.py"
+            code_file.write_text(code_output)
+
+            # --- Test pass rate ---
+            test_score = 0.5
+            if test_suite:
+                test_file = pathlib.Path(tmpdir) / "test_solution.py"
+                test_file.write_text(test_suite)
+                r = subprocess.run(
+                    ["python", "-m", "pytest", str(test_file), "-q", "--tb=no"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                test_score = _parse_pytest_fraction(r.stdout)
+
+            # --- PEP8 linting score ---
+            lint_score = 1.0
+            r2 = subprocess.run(
+                ["python", "-m", "pycodestyle", "--max-line-length=100", str(code_file)],
+                capture_output=True, text=True, timeout=10,
+            )
+            violations = len([l for l in r2.stdout.strip().split("\n") if l.strip()])
+            lint_score = max(0.0, 1.0 - violations * 0.05)
+
+            return 0.7 * test_score + 0.3 * lint_score
+
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        bt.logging.warning("Code test runner unavailable; falling back to pattern match")
+
+    # Fallback: expected_patterns keyword check
+    if not expected_patterns:
+        return 0.5
     matches = sum(1 for p in expected_patterns if p in code_output)
     return matches / len(expected_patterns)
+
+
+def _parse_pytest_fraction(output: str) -> float:
+    """Parse pytest summary line (e.g. '3 passed, 1 failed') → fraction passed."""
+    import re
+    passed = sum(int(m) for m in re.findall(r'(\d+) passed', output))
+    failed = sum(int(m) for m in re.findall(r'(\d+) failed', output))
+    total = passed + failed
+    return passed / total if total > 0 else 0.5
 
 
 def _score_rag_quality(output_text: str, reference: dict) -> float:
@@ -130,24 +172,40 @@ def _lcs_f1(reference: str, hypothesis: str) -> float:
 
 def _score_agent_quality(output: dict, reference: dict) -> float:
     """
-    Agent quality: binary goal checklist pass/fail (readme §2.3).
+    Agent quality: structured binary pass/fail per criterion (readme §2.3, issue 2.6).
     Score = passed / total criteria.
+
+    Each criterion may have a 'type':
+      'keyword' (default): exact text must appear in output
+      'json_key': output must be parseable JSON containing the specified key
+      'regex': output must match the provided 'pattern'
     """
+    import re as _re, json as _json
+
     checklist = reference.get("goal_checklist", [])
     if not checklist:
-        return 0.5  # no checklist → partial credit
+        return 0.5
 
-    output_text = str(output.get("text", "")).lower()
-    output_artifacts = str(output.get("artifacts", {})).lower()
-    combined = output_text + " " + output_artifacts
+    output_text = str(output.get("text", ""))
+    output_lower = output_text.lower()
 
-    passed = 0
-    for criterion in checklist:
-        criterion_text = criterion.get("text", "").lower()
-        # Simple keyword-based check for mock
-        if criterion_text and criterion_text in combined:
-            passed += 1
+    def _check(criterion: dict) -> bool:
+        ctype = criterion.get("type", "keyword")
+        text  = criterion.get("text", "").lower()
+        if ctype == "keyword":
+            return text in output_lower
+        elif ctype == "json_key":
+            try:
+                parsed = _json.loads(output_text)
+                return text in (parsed if isinstance(parsed, dict) else {})
+            except Exception:
+                return False
+        elif ctype == "regex":
+            pattern = criterion.get("pattern", "")
+            return bool(_re.search(pattern, output_text, _re.IGNORECASE))
+        return False
 
+    passed = sum(1 for c in checklist if _check(c))
     return passed / len(checklist)
 
 

@@ -22,6 +22,9 @@ from cswon.validator.config import (
     BENCHMARK_PATH,
 )
 
+# 6-month boost window in blocks (~12 s/block, 30 days/month → 6×30×24×300 = 1,296,000)
+EARLY_MINER_BOOST_WINDOW = 1_296_000
+
 
 def load_benchmark_tasks(benchmark_path: Optional[str] = None) -> List[dict]:
     """
@@ -65,39 +68,63 @@ def select_task_for_block(
     return benchmark_tasks[task_index]
 
 
+# ── Immunity helper (issue 2.4) ─────────────────────────────────────────────
+
+def _is_within_immunity(
+    uid: int,
+    subtensor,
+    netuid: int,
+    current_block: int,
+) -> bool:
+    """
+    True if the miner is still within its immunity_period (readme §3.1, §4.4).
+    Fetches registration block and immunity_period from chain — NOT a UID proxy.
+    Falls back to False (assume not immune) if the chain is unreachable.
+    """
+    try:
+        params = subtensor.get_subnet_hyperparameters(netuid)
+        immunity_period = params.immunity_period
+        neuron = subtensor.neuron_for_uid(uid=uid, netuid=netuid)
+        reg_block = neuron.block
+        return (current_block - reg_block) < immunity_period
+    except Exception as e:
+        bt.logging.trace(f"Could not check immunity for uid={uid}: {e}")
+        return False  # conservative: assume not immune
+
+
 def select_miners_for_query(
     metagraph: "bt.metagraph",
     k: int = 10,
     exclude: Optional[List[int]] = None,
-    registration_blocks: Optional[dict] = None,
     min_stake_tao: float = 1.0,
+    subtensor=None,
+    netuid: Optional[int] = None,
+    current_block: Optional[int] = None,
+    subnet_launch_block: Optional[int] = None,
 ) -> np.ndarray:
     """
-    Select miners to query with early participation boost (readme §3.5)
-    and minimum active stake enforcement (readme §3.1).
-
-    The first 50 registered miners (by registration order) get 3× query
-    frequency — their selection probability is tripled. This is implemented
-    by giving them 3× weight in the random sampling.
-
-    Miners below min_stake_tao active stake are excluded, EXCEPT miners
-    still within their immunity period (approximated as uid < EARLY_MINER_LIMIT)
-    to avoid penalising brand-new participants before they can acquire stake.
+    Select miners to query with early participation boost (readme §3.5).
 
     Args:
         metagraph: The metagraph object.
         k: Number of miners to select.
         exclude: UIDs to exclude from selection.
-        registration_blocks: Optional dict mapping uid -> registration block.
-        min_stake_tao: Minimum active TAO stake required (readme §3.1). Default 1.0.
-
-    Returns:
-        np.ndarray: Selected miner UIDs.
+        min_stake_tao: Minimum active TAO stake required (readme §3.1).
+        subtensor: If provided, used for real immunity chain lookup (issue 2.4).
+        netuid: Subnet UID — required when subtensor is provided.
+        current_block: Current block height — required when subtensor is provided.
+        subnet_launch_block: Block the subnet launched at; limits the 6-month boost (issue 3.7).
     """
     exclude = exclude or []
     n = metagraph.n.item()
 
-    # Build candidate list with weights for early miner boost
+    # Determine if the 6-month early boost is still active (issue 3.7)
+    early_boost_active = (
+        subnet_launch_block is None
+        or current_block is None
+        or (current_block - subnet_launch_block) < EARLY_MINER_BOOST_WINDOW
+    )
+
     candidates = []
     weights = []
 
@@ -112,13 +139,14 @@ def select_miners_for_query(
         if metagraph.validator_permit[uid] and metagraph.S[uid] > 1024:
             continue
 
-        # Minimum stake enforcement (readme §3.1).
-        # Exception: early miners (uid < EARLY_MINER_LIMIT) approximate the immunity
-        # period — they are included regardless of stake so new participants aren't
-        # starved of queries before they can acquire the required stake.
-        is_early_miner = uid < EARLY_MINER_LIMIT
+        # Immunity check: real chain lookup when subtensor available (issue 2.4),
+        # fallback to UID-ordinal proxy (less accurate but no chain required).
+        if subtensor is not None and netuid is not None and current_block is not None:
+            is_immune = _is_within_immunity(uid, subtensor, netuid, current_block)
+        else:
+            is_immune = uid < EARLY_MINER_LIMIT  # approximation
         miner_stake = float(metagraph.S[uid])
-        if miner_stake < min_stake_tao and not is_early_miner:
+        if miner_stake < min_stake_tao and not is_immune:
             bt.logging.trace(
                 f"Skipping miner uid={uid}: stake={miner_stake:.3f} < "
                 f"min_stake_tao={min_stake_tao}"
@@ -127,8 +155,8 @@ def select_miners_for_query(
 
         candidates.append(uid)
 
-        # Early miner boost: first EARLY_MINER_LIMIT miners get higher selection weight
-        if uid < EARLY_MINER_LIMIT:
+        # Early miner boost: 3× selection weight within 6-month window (issues 2.4, 3.7)
+        if early_boost_active and uid < EARLY_MINER_LIMIT:
             weights.append(float(EARLY_MINER_BOOST_MULTIPLIER))
         else:
             weights.append(1.0)

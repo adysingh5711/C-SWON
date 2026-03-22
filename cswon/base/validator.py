@@ -41,6 +41,9 @@ from cswon.validator.config import (
     __spec_version__ as CSWON_SPEC_VERSION,
 )
 
+# Benchmark version broadcast (readme §4.7, issue 2.2)
+BENCHMARK_VERSION = "v1"
+
 
 class BaseValidatorNeuron(BaseNeuron):
     """
@@ -70,6 +73,10 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = np.zeros(self.metagraph.n, dtype=np.float32)
+
+        # Track the last block at which weights were submitted (issue 2.9)
+        # Used alongside metagraph.last_update to guard restart edge cases.
+        self._last_set_block: int = 0
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -115,11 +122,13 @@ class BaseValidatorNeuron(BaseNeuron):
                         coldkey=self.wallet.coldkeypub.ss58_address,
                     ),
                 )
-                # Store description separately in the axon's info if SDK supports it
+                # Broadcast both scoring version AND benchmark version (readme §4.5/§4.7, issue 2.2)
                 try:
-                    self.axon.info.description = f"cswon-scoring:{SCORING_VERSION}"
+                    self.axon.info.description = (
+                        f"cswon-scoring:{SCORING_VERSION};cswon-bench:{BENCHMARK_VERSION}"
+                    )
                 except AttributeError:
-                    pass  # older SDK — description field not available
+                    pass  # older SDK
             except TypeError:
                 # Fallback for SDKs that don't support info= parameter
                 self.axon = bt.axon(wallet=self.wallet, config=self.config)
@@ -304,6 +313,8 @@ class BaseValidatorNeuron(BaseNeuron):
             normalised_weights=weights,
             spec_version=CSWON_SPEC_VERSION,
         )
+        # Record the block at which we submitted (issue 2.9: restart guard)
+        self._last_set_block = self.block
 
     def should_set_weights(self) -> bool:
         """
@@ -320,7 +331,10 @@ class BaseValidatorNeuron(BaseNeuron):
         if self.config.neuron.disable_set_weights:
             return False
 
-        last_update = int(self.metagraph.last_update[self.uid])
+        # Use max of on-chain last_update and local _last_set_block (issue 2.9)
+        # Prevents premature weight submission after a restart.
+        chain_last = int(self.metagraph.last_update[self.uid])
+        last_update = max(chain_last, self._last_set_block)
         return ws.should_set_weights(
             current_block=self.block,
             last_set_block=last_update,
@@ -362,70 +376,79 @@ class BaseValidatorNeuron(BaseNeuron):
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
 
     def update_scores(self, rewards: np.ndarray, uids: List[int]):
-        """Performs exponential moving average on the scores based on the rewards received from the miners."""
+        """
+        DEPRECATED: EMA contradicts readme §2.2 (equal-weight rolling window, no decay).
+        Redirects to ScoreAggregator when available. Legacy EMA path kept for compat.
+        """
+        bt.logging.warning(
+            "update_scores() uses EMA which contradicts readme §2.2. "
+            "All callers should use score_aggregator.add_score() instead."
+        )
+        # Redirect to ScoreAggregator (spec-compliant path)
+        if hasattr(self, "score_aggregator"):
+            rewards = np.nan_to_num(np.asarray(rewards), nan=0.0)
+            uids_arr = np.asarray(uids) if not isinstance(uids, np.ndarray) else uids.copy()
+            for uid, reward in zip(uids_arr.tolist(), rewards.tolist()):
+                self.score_aggregator.add_score(int(uid), float(reward))
+            return
 
-        # Check if rewards contains NaN values.
+        # Legacy EMA fallback (only when score_aggregator not initialised)
         if np.isnan(rewards).any():
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            # Replace any NaN values in rewards with 0.
             rewards = np.nan_to_num(rewards, nan=0)
-
-        # Ensure rewards is a numpy array.
         rewards = np.asarray(rewards)
-
-        # Check if `uids` is already a numpy array and copy it to avoid the warning.
         if isinstance(uids, np.ndarray):
             uids_array = uids.copy()
         else:
             uids_array = np.array(uids)
-
-        # Handle edge case: If either rewards or uids_array is empty.
         if rewards.size == 0 or uids_array.size == 0:
-            bt.logging.info(f"rewards: {rewards}, uids_array: {uids_array}")
-            bt.logging.warning(
-                "Either rewards or uids_array is empty. No updates will be performed."
-            )
             return
-
-        # Check if sizes of rewards and uids_array match.
         if rewards.size != uids_array.size:
-            raise ValueError(
-                f"Shape mismatch: rewards array of shape {rewards.shape} "
-                f"cannot be broadcast to uids array of shape {uids_array.shape}"
-            )
-
-        # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]
+            raise ValueError(f"Shape mismatch: rewards {rewards.shape} vs uids {uids_array.shape}")
         scattered_rewards: np.ndarray = np.zeros_like(self.scores)
         scattered_rewards[uids_array] = rewards
-        bt.logging.debug(f"Scattered rewards: {rewards}")
-
-        # Update scores with rewards produced by this step.
-        # shape: [ metagraph.n ]
         alpha: float = self.config.neuron.moving_average_alpha
-        self.scores: np.ndarray = (
-            alpha * scattered_rewards + (1 - alpha) * self.scores
-        )
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        self.scores = alpha * scattered_rewards + (1 - alpha) * self.scores
 
     def save_state(self):
         """Saves the state of the validator to a file."""
+        import json, pathlib
         bt.logging.info("Saving validator state.")
-
-        # Save the state of the validator to file.
         np.savez(
             self.config.neuron.full_path + "/state.npz",
             step=self.step,
             scores=self.scores,
             hotkeys=self.hotkeys,
         )
+        # Persist ScoreAggregator rolling window (issue 3.10)
+        if hasattr(self, "score_aggregator"):
+            agg_path = pathlib.Path(self.config.neuron.full_path) / "score_aggregator.json"
+            agg_data = {
+                "score_windows": {str(k): list(v) for k, v in self.score_aggregator.score_windows.items()},
+                "tasks_seen":    {str(k): v for k, v in self.score_aggregator.tasks_seen.items()},
+            }
+            try:
+                agg_path.write_text(json.dumps(agg_data))
+            except IOError as e:
+                bt.logging.warning(f"Could not save ScoreAggregator state: {e}")
 
     def load_state(self):
-        """Loads the state of the validator from a file."""
+        """Loads the state of the validator from a file, including ScoreAggregator (issue 3.10)."""
+        import json, pathlib
         bt.logging.info("Loading validator state.")
-
-        # Load the state of the validator from file.
         state = np.load(self.config.neuron.full_path + "/state.npz")
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]
+        # Restore ScoreAggregator rolling window
+        agg_path = pathlib.Path(self.config.neuron.full_path) / "score_aggregator.json"
+        if hasattr(self, "score_aggregator") and agg_path.exists():
+            try:
+                agg_data = json.loads(agg_path.read_text())
+                for k, v in agg_data.get("score_windows", {}).items():
+                    self.score_aggregator.score_windows[int(k)] = list(v)
+                for k, v in agg_data.get("tasks_seen", {}).items():
+                    self.score_aggregator.tasks_seen[int(k)] = int(v)
+                bt.logging.info("ScoreAggregator state restored from disk.")
+            except Exception as e:
+                bt.logging.warning(f"Could not restore ScoreAggregator state: {e}")

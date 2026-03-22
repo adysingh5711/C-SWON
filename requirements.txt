@@ -8,3 +8,4 @@ numpy>=1
 setuptools>=68
 rouge-score>=0.1.2
 docker>=7.0
+pycodestyle>=2.11

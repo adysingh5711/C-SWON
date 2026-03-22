@@ -128,7 +128,7 @@ class BenchmarkLifecycleTracker:
                     )
                     continue
 
-            # -- Quarantine check: >70% below 0.10 for DEPRECATION_TEMPO_COUNT consecutive tempos
+            # -- Quarantine check
             if len(history) >= DEPRECATION_TEMPO_COUNT:
                 recent = list(history)[-DEPRECATION_TEMPO_COUNT:]
                 if all(frac_below >= TRIGGER_FRACTION for _, frac_below in recent):
@@ -149,9 +149,13 @@ class BenchmarkLifecycleTracker:
                         )
                     continue
 
-            # If no longer triggering quarantine, reset quarantine duration
-            if task_id in self._quarantine_duration:
+            # Quarantine condition NOT met this tempo — reset and revert to active (issue 2.10)
+            if task_id in self._quarantine_duration and self._quarantine_duration[task_id] > 0:
                 self._quarantine_duration[task_id] = 0
+                changes[task_id] = "active"
+                bt.logging.info(
+                    f"Task {task_id} REVERTED to active: quarantine condition no longer met."
+                )
 
         return changes
 
@@ -186,6 +190,10 @@ class BenchmarkLifecycleTracker:
                         task["quarantine_since_tempo"] = self._quarantine_duration.get(task_id, 1)
                     elif new_status == "deprecated":
                         task["deprecation_reason"] = "auto-lifecycle"
+                    elif new_status == "active":
+                        # Revert: clear quarantine metadata (issue 2.10)
+                        task["quarantine_since_tempo"] = None
+                        task["deprecation_reason"] = None
                     modified = True
 
         if modified:
