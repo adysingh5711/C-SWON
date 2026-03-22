@@ -61,7 +61,7 @@ flowchart TD
 ### 2.2 Scoring Formula (v1.0.0)
 
 > **Scoring version:** All validators must run `SCORING_VERSION = "1.0.0"`. </br>
-> [See Section 4.5 for the upgrade protocol](#4.5). </br>
+> [See Section 4.5 for the upgrade protocol]. </br>
 
 Every workflow a miner submits is executed by validators. A composite score
 **S ∈ [0, 1]** is computed across four dimensions:
@@ -82,9 +82,24 @@ S_cost      = max(0, 1 − actual_tao / max_budget_tao)
 S_latency   = max(0, 1 − actual_seconds / max_latency_seconds)
               only scored when S_success > 0.7; else S_latency = 0
 
-S_reliability = max(0, 1 − (retries × 0.10 + timeouts × 0.20 + hard_failures × 0.50))
+S_reliability = min(1.0, max(0, 1 − (unplanned_retries × 0.10
+                                    + timeouts          × 0.20
+                                    + hard_failures     × 0.50)))
               applied regardless of success gate
+
+where:
+  unplanned_retries    = max(0, actual_retries − declared_retry_budget)
+                         — must be a non-negative integer; clamp to 0 if counting
+                           produces a negative value (guards against off-by-one bugs)
+  declared_retry_budget = sum of retry_count values in error_handling (0 if absent)
+  timeouts             = step execution events that exceeded declared timeout_seconds
+  hard_failures        = steps that terminated after exhausting the declared retry budget
+  min(1.0, ...) guard  = prevents S > 1.0 if a counting bug produces negative penalties
 ```
+
+**Reliability scoring rationale (fix: declared retries are not penalised):**
+A miner who writes `"retry_count": 2` in `error_handling` is declaring defensive intent. Charging `retries × 0.10` per declared retry previously penalised correct
+error handling more than a hard failure (0.10×2 + 0.50 = 0.70 vs 0.50 for no retries). The corrected formula only penalises *unplanned* retries — attempts beyond the declared budget — and failures that exhaust that budget. Retries that stay within budget and ultimately succeed incur **zero** reliability penalty.
 
 **Partial DAG completion:** If a 4-step workflow completes 3 steps before a hard failure, `completion_ratio = 0.75`. This prevents miners from submitting single-step workflows for multi-step tasks to inflate their success score.
 
@@ -127,14 +142,17 @@ C-SWON does **not** introduce on-chain slashing — Bittensor does not support a
 
 - **Synthetic Ground Truth Tasks (15–20%):** Validators inject tasks with known optimal
   workflows. Miners cannot distinguish these from real tasks.
-- **Deterministic Task Schedule (cross-validator consensus without gossip):**
-  All validators at a given block height query miners on the *same* task:
+- **VRF-keyed per-validator task schedule (pre-caching and collusion resistant):**
+  Each validator derives its task assignment from its own hotkey and the current block, making the per-validator stream pseudorandom but fully deterministic:
   ```python
-  task_index = current_block % len(benchmark_tasks)
+  import hashlib
+  seed       = f"{validator_hotkey}:{current_block}".encode()
+  h          = hashlib.sha256(seed).digest()
+  task_index = int.from_bytes(h, 'big') % len(benchmark_tasks)
   task       = benchmark_tasks[task_index]
   ```
-  Because every validator runs the same task at the same block, score divergence is detectable from the on-chain weights matrix alone — no off-chain gossip layer needed. Yuma's bond mechanism automatically reduces rewards for outlier validators.
-- **Scoring version enforcement:** Validators include `SCORING_VERSION` in their `axon.info.version` field. Version mismatches are detectable during cross-validation.
+  Different validators query different tasks at the same block height. Miners cannot pre-compute a per-validator cache without knowing every validator's hotkey and the current block simultaneously. Cross-validator score comparison uses distributional statistics over the rolling window, not identical-task point comparisons. Yuma's bond mechanism automatically reduces rewards for persistent outlier validators.
+- **Scoring version enforcement:** Validators encode `SCORING_VERSION` as an integer in `__spec_version__` and as a human-readable string in `axon.info.description` (e.g. `"cswon-scoring:1.0.0"`). `axon.info.version` is an SDK-managed integer and must not be written manually. Mismatches are detected by reading `metagraph.axons[uid].version` (int) and `.description` (string) from the live metagraph. See Section 4.5 for the full upgrade protocol.
 - **Dynamic Benchmark Rotation:** Tasks are deprecated when >70% of miners score above 0.90 consistently for 3 consecutive tempos, triggering mandatory dataset rotation.
 - **Execution Sandboxing:** Validators execute all workflows in isolated Docker containers, tracking actual TAO costs, latency, retries, and step completions.
 - **Temporal Consistency Checks:** Sudden unexplained performance jumps trigger a manual audit flag in the validator dashboard.
@@ -196,12 +214,79 @@ Examples:
 
 **Execution contract (validator executor is the sole resolver):**
 
-1. Execute nodes in topological order derived from `edges`.
-2. After each node executes, store its output in `context[node_id]`.
-3. Before executing node `K`, scan all `params` values for `"${...}"` patterns and replace with `context` values using JSON path resolution.
-4. If a referenced field does not exist, exceeds size limits, or the upstream node failed, the current step is marked a hard failure and contributes to `S_reliability`.
+1. Derive the execution plan by topological sort of `edges`. Nodes with **no dependency on each other** (no shared path in the DAG) are placed in the same *execution tier* and run **concurrently**.
+2. After each node completes (success or failure), store its output in `context[node_id]`.
+3. Before executing node `K`, resolve only the `"${...}"` patterns that reference *completed* upstream nodes. If a referenced node is still executing, wait for it.
+4. **Before dispatching** each node to its partner subnet, the executor checks the cumulative TAO cost so far:
+   ```python
+   budget_ceiling = min(constraints["max_budget_tao"],
+                        1.5 * workflow_plan["total_estimated_cost"])
+   if cumulative_tao >= budget_ceiling:
+       # Mark all remaining unexecuted nodes as "budget_abort"
+       for node in remaining_nodes:
+           context[node.id] = {"status": "budget_abort", "output": None}
+       break   # exit execution loop; S_cost forced to 0 at scoring time
+   ```
+   This check runs **before** each node dispatch, so the validator is never billed for a node that exceeds the ceiling. Aborted nodes are counted in `total_steps_in_dag` but not in `steps_completed`, reducing `completion_ratio`. `S_cost` is forced to 0 for any workflow that triggered a budget abort.
+5. If a referenced field does not exist, exceeds size limits, or the upstream node **that this specific DataRef points to** failed, the current step is marked a hard failure and contributes to `S_reliability`. A parallel sibling's failure does NOT propagate to unrelated nodes.
+
+**Parallel DAG rules (fix: undefined behaviour removed):**
+
+| Metric | Sequential DAG | Parallel DAG |
+|--------|---------------|-------------|
+| `completion_ratio` | `steps_completed / total_nodes` | `steps_completed / total_nodes` (same; counts nodes, not paths) |
+| `S_latency` | wall-clock end-to-end time | wall-clock end-to-end time (correct; parallel branches compress it) |
+| `S_cost` | sum of all step costs | sum of all step costs (parallel steps both charged) |
+| DataRef failure propagation | upstream failure → downstream fails | only if the specific referenced node failed; unrelated branches continue |
+
+**Example:** A→C and B→C (A and B independent). A completes, B fails. C only needs `${A.output.text}`. C **proceeds**; B's failure reduces `completion_ratio` by 1/3 but does not block C. If C needed `${B.output.text}`, C hard-fails.
 
 Miners must not implement their own DataRef resolvers. All resolution is performed by the validator executor as written above.
+
+---
+
+### 3.2b WorkflowSynapse Protocol Definition
+
+`WorkflowSynapse` is the Bittensor synapse that carries task packages from validators to miners and workflow plans back. It must be defined in `cswon/protocol.py` before any miner or validator code can interoperate.
+
+```python
+# cswon/protocol.py
+
+import bittensor as bt
+from typing import Optional
+
+class WorkflowSynapse(bt.Synapse):
+    """
+    Validator → Miner: carries the task package.
+    Miner → Validator: carries the workflow plan (populated by miner).
+    """
+
+    # ── Validator-populated fields (sent to miner) ──────────────────
+    task_id:          str                    = ""
+    task_type:        str                    = ""
+    description:      str                    = ""
+    quality_criteria: dict                   = {}
+    constraints:      dict                   = {}   # max_budget_tao, max_latency_seconds, allowed_subnets
+    available_tools:  dict                   = {}   # per-subnet cost/latency hints
+    send_block:       int                    = 0    # stamped by query_loop before dispatch
+
+    # ── Miner-populated fields (returned to validator) ───────────────
+    miner_uid:              Optional[int]    = None
+    scoring_version:        Optional[str]    = None
+    workflow_plan:          Optional[dict]   = None  # nodes, edges, error_handling
+    total_estimated_cost:   Optional[float]  = None
+    total_estimated_latency:Optional[float]  = None
+    confidence:             Optional[float]  = None
+    reasoning:              Optional[str]    = None
+
+    def deserialize(self) -> "WorkflowSynapse":
+        return self
+```
+
+**Validator reads** `response.miner_uid`, `response.workflow_plan`, etc. </br>
+**Validator writes** `task_id`, `task_type`, `description`, `constraints`, `available_tools`, `send_block` before calling `dendrite.forward()`. </br>
+The miner populates all `Optional` fields in its `forward()` handler and returns the synapse. Any `Optional` field left as `None` by the miner is treated as an invalid response and discarded.
+
 
 ---
 
@@ -230,6 +315,16 @@ Miners must not implement their own DataRef resolvers. All resolution is perform
     "SN64": { "type": "inference",       "avg_cost": 0.0005, "avg_latency": 0.3 },
     "SN45": { "type": "code_testing",    "avg_cost": 0.002,  "avg_latency": 2.0 },
     "SN70": { "type": "fact_checking",   "avg_cost": 0.0015, "avg_latency": 0.8 }
+  },
+  "routing_policy": {
+    "default": {
+      "miner_selection": "top_k_stake_weighted",
+      "top_k": 3,
+      "aggregation": "majority_vote"
+    },
+    "SN1":  { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "median_logit" },
+    "SN62": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" },
+    "SN45": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" }
   }
 }
 ```
@@ -281,6 +376,16 @@ Miners must not implement their own DataRef resolvers. All resolution is perform
 }
 ```
 
+> **`routing_policy` field (fix: partner subnet non-determinism):**
+> Validators use the `routing_policy` field embedded in every benchmark task JSON to
+> select which miners on a partner subnet to call and how to aggregate their outputs.
+> All validators reading the same benchmark task JSON will route identically, making
+> cross-validator score comparison valid. The `aggregation` values are:
+> - `"median_logit"` — take the median of numeric outputs (e.g. token logits)
+> - `"majority_vote"` — take the modal text output across the top-k miners
+>
+> Validators must not override this policy with their own routing logic.
+
 ### 3.4 Performance Dimensions
 
 | Dimension        | Weight | Formula |
@@ -288,7 +393,7 @@ Miners must not implement their own DataRef resolvers. All resolution is perform
 | Task Success     | 50%    | `output_quality × completion_ratio` |
 | Cost Efficiency  | 25%    | `max(0, 1 − actual/budget)` — gated at S_success > 0.7 |
 | Latency          | 15%    | `max(0, 1 − actual_s/max_s)` — gated at S_success > 0.7 |
-| Reliability      | 10%    | `max(0, 1 − retries×0.1 − timeouts×0.2 − failures×0.5)` |
+| Reliability      | 10%    | `min(1.0, max(0, 1 − unplanned_retries×0.1 − timeouts×0.2 − failures×0.5))` — planned retries free |
 
 Tracked but not yet weighted (signals for v2):
 
@@ -298,8 +403,7 @@ Tracked but not yet weighted (signals for v2):
 
 ### 3.5 Early Participation Programme (Protocol-Compliant)
 
-The "1.5× emission multiplier" is not achievable at the Yuma protocol level. C-SWON
-incentivises early miners through protocol-safe alternatives instead:
+The "1.5× emission multiplier" is not achievable at the Yuma protocol level. C-SWON incentivises early miners through protocol-safe alternatives instead:
 
 | Incentive | Mechanism | Protocol-Safe? |
 |-----------|-----------|---------------|
@@ -339,19 +443,55 @@ if (current_block - last_set_block >= TEMPO
         netuid=netuid,
         uids=miner_uids,
         weights=normalised_weights,
-        wait_for_inclusion=True,
+        wait_for_inclusion=False,  # True blocks the event loop for up to 12 s; use False + check return value
     )
     last_set_block = current_block
 ```
 
 This ensures:
 - Weights are always submitted within the same Yuma epoch they were earned.
-- `CommittingWeightsTooFast` is never triggered.
+- `CommittingWeightsTooFast` is never triggered (guarded by the dual-condition check above).
 - No reward signal drift from skipped epochs.
 
 > **Testnet note:** C-SWON registers with `tempo = 360` blocks in
 > `SubnetHyperparameters`. Do not change this without also updating
 > `EXEC_SUPPORT_N_MIN` in `validator/config.py`.
+
+**Async query loop (fix: timeout must be < 1 block):**
+
+A 30-second blocking wait per query means the validator misses 2+ block heights
+and attributes stale responses to the wrong block, breaking per-validator VRF task
+selection. The query loop must be fully asynchronous:
+
+```python
+# validator/query_loop.py
+
+import asyncio
+import bittensor as bt
+
+QUERY_TIMEOUT_S = 9   # hard ceiling: must be < 12 s (1 block)
+
+async def query_miners(
+    dendrite: bt.dendrite,
+    axons: list[bt.AxonInfo],
+    synapse: WorkflowSynapse,
+    send_block: int,
+) -> list[WorkflowSynapse]:
+    responses = await dendrite.forward(
+        axons   = axons,
+        synapse = synapse,
+        timeout = QUERY_TIMEOUT_S,
+    )
+    # Attribute ALL responses to send_block, not receipt block
+    for r in responses:
+        r.send_block = send_block
+    return responses
+```
+
+`send_block` is stamped onto each response at dispatch time. The score aggregation
+pipeline reads `response.send_block`, not `current_block`, so a reply arriving 11 s
+after send is still scored against the correct task regardless of how many blocks have
+elapsed since the query was sent.
 
 ---
 
@@ -384,7 +524,10 @@ All calls to partner subnets are **off-chain HTTP** — C-SWON makes no claim of
 | Mainnet bootstrap | Validator registers a C-SWON dedicated hotkey on each partner subnet. Calls at standard rates, subsidised by the Execution Support Pool. |
 | Mainnet at scale | Negotiated API-tier access with high-traffic partner subnets. Revenue-share (5% of gateway fees → partner subnet) replaces per-call costs. |
 
-**Security model for MVP:** Off-chain execution logs + deterministic task schedule (all validators test the same task per block) + Yuma's stake-weighted bond clipping for outlier detection. No on-chain receipts exist today; they are a v4 R&D item.
+**Security model for MVP:** Off-chain execution logs + VRF-keyed per-validator task
+schedule (validators test different tasks per block; collusion requires knowing all
+validator hotkeys AND block heights in advance) + Yuma's stake-weighted bond clipping
+for outlier detection. No on-chain receipts exist today; they are a v4 R&D item.
 
 ---
 
@@ -397,8 +540,19 @@ New miners have a default `immunity_period` of 5,000 blocks (~16.7 hours). Valid
 
 WARMUP_TASK_THRESHOLD = 20   # set in validator/config.py
 
-def get_miner_weight(miner_uid: int, tasks_seen: int, raw_score: float) -> float:
-    blocks_since_reg = current_block - metagraph.block_at_registration[miner_uid]
+def get_miner_weight(
+    miner_uid:  int,
+    tasks_seen: int,
+    raw_score:  float,
+    subtensor:  "bt.subtensor",
+    netuid:     int,
+    current_block: int,
+) -> float:
+    # immunity_period must be fetched from chain — it is NOT available as a bare variable
+    immunity_period  = subtensor.get_subnet_hyperparameters(netuid).immunity_period
+    # registration block is in neuron.block, not metagraph.block_at_registration
+    reg_block        = subtensor.neuron_for_uid(uid=miner_uid, netuid=netuid).block
+    blocks_since_reg = current_block - reg_block
     is_immune        = blocks_since_reg < immunity_period
 
     if is_immune:
@@ -421,9 +575,33 @@ All validators must run the **same scoring version** to produce consistent weigh
 SCORING_VERSION = "1.0.0"   # bumped only via governance vote
 ```
 
-**Version signal:** Validators encode `SCORING_VERSION` in `axon.info.version`.
-Any validator on a different version is detectable during cross-validation by inspecting
-the metagraph.
+**Version signal (fix: correct Subtensor field):**
+`axon.info.version` in Bittensor's `NeuronInfo` struct is an **integer** populated automatically from `__spec_version__` (e.g. `60400` for v6.4.0). Writing a string like `"1.0.0"` into this field will be silently cast or rejected by the SDK.
+
+Instead, `SCORING_VERSION` is stored as an integer in `__spec_version__` using a decimal encoding, and the validator exposes the full semantic string in `axon.info.description`:
+
+```python
+# validator/config.py
+SCORING_VERSION     = "1.0.0"
+# Encode as integer: major*10000 + minor*100 + patch
+__spec_version__    = 10000        # "1.0.0"  →  1*10000 + 0*100 + 0
+```
+
+```python
+# validator/base.py  (passed to bt.axon())
+axon = bt.axon(
+    wallet=wallet,
+    config=config,
+    port=port,
+    external_ip=bt.utils.networking.get_external_ip(),
+    info=bt.AxonInfo(
+        version     = __spec_version__,        # int, SDK-compatible
+        description = f"cswon-scoring:{SCORING_VERSION}",  # human-readable
+    ),
+)
+```
+
+Any validator on a different `__spec_version__` is detectable by parsing `metagraph.axons[uid].version` (integer) and `metagraph.axons[uid].description` (string). Both fields are available in the live metagraph.
 
 **Upgrade protocol (requires ≥67% validator stake-weighted consensus):**
 
@@ -453,13 +631,35 @@ Validators may incur TAO costs from sandboxed calls to partner subnets. C-SWON m
 
 ### 4.7 Benchmark Governance
 
-Benchmark tasks are stored **off-chain** in a versioned JSON dataset (`benchmarks/v{N}.json`) in the C-SWON GitHub repo. Validators signal their active benchmark version via `axon.info.version` each epoch — a lightweight mechanism requiring no new Subtensor extrinsics.
+Benchmark tasks are stored **off-chain** in a versioned JSON dataset (`benchmarks/v{N}.json`) in the C-SWON GitHub repo. Validators signal their active benchmark version via `axon.info.description` (e.g. `"cswon-bench:v1"`) alongside the `__spec_version__` integer — a lightweight mechanism requiring no new Subtensor extrinsics. `axon.info.version` is an SDK-managed integer and must not be used for freeform string signals.
 
 - **Auditability:** Anyone can verify which benchmark version a validator is running.
 - **Controlled updates:** New versions require ≥3 validator sign-offs via GitHub PR.
 - **Tamper detection:** Score outliers from validators on an unrecognised benchmark version are detectable in the on-chain weights matrix.
 
-Benchmark composition: 15–20% synthetic ground truth, 80–85% real-world tasks across code pipelines, RAG, agent tasks, and data transforms. Minimum 50 tasks per version. Deprecation trigger: >70% of miners score above 0.90 for 3 consecutive tempos.
+Benchmark composition: 15–20% synthetic ground truth, 80–85% real-world tasks across code pipelines, RAG, agent tasks, and data transforms. Minimum 50 tasks per version.
+
+**Lifecycle rules per task (fix: buggy tasks now detectable):**
+
+| Trigger | Action | Rationale |
+|---------|--------|-----------|
+| >70% of miners score >0.90 for 3 consecutive tempos | Deprecate task | Overfitted; no longer discriminating |
+| >70% of miners score <0.10 for 3 consecutive tempos | **Quarantine** task; flag for human review | Likely broken test, bad reference answer, or unreachable partner subnet |
+| Quarantined task unresolved after 5 tempos | Remove from active pool automatically | Prevents dead weight permanently distorting scores |
+
+A `"status"` field is added to each task entry in `benchmarks/v{N}.json`:
+
+```json
+{
+  "task_id": "t-0042",
+  "status": "active",
+  "quarantine_since_tempo": null,
+  "deprecation_reason": null,
+  ...
+}
+```
+
+Valid values: `"active"` | `"quarantined"` | `"deprecated"`. Validators skip tasks whose `status != "active"`. Quarantine transitions are written via PR with ≥2 validator sign-offs (lower bar than full version upgrades).
 
 ---
 
@@ -467,12 +667,15 @@ Benchmark composition: 15–20% synthetic ground truth, 80–85% real-world task
 
 1. **Deterministic task selection:**
    ```python
-   task_index = current_block % len(benchmark_tasks)
+   import hashlib
+   seed = f"{validator_hotkey}:{current_block}".encode()
+   h    = hashlib.sha256(seed).digest()
+   task_index = int.from_bytes(h, 'big') % len(benchmark_tasks)
    task       = benchmark_tasks[task_index]
    ```
-   All validators at the same block height test the same task, enabling cross-validator consensus without a gossip layer.
+   Different validators derive different tasks from the same block via their hotkey-keyed VRF. Cross-validator consensus uses distributional statistics over the rolling window, not identical-task point comparisons — eliminating the need for a gossip layer.
 
-2. **Miner workflow collection:** Send task to 5–10 randomly selected miners with a 30-second timeout. Filter malformed or constraint-violating plans at ingestion.
+2. **Miner workflow collection:** Send task to 5–10 randomly selected miners with a sub-block timeout (≤ 10 seconds). For each response, validate that the signed `dendrite.hotkey` matches the queried UID in the metagraph before accepting a workflow plan. Discard any response whose hotkey does not match, even if the JSON is well-formed.
 
 3. **Sandboxed execution:** Spin up an isolated Docker container per workflow. Execute each DAG step, resolve DataRefs, and track:
    - Actual TAO consumed per step
@@ -496,13 +699,13 @@ Benchmark composition: 15–20% synthetic ground truth, 80–85% real-world task
 
 | Parameter                | Value                        | Configurable via |
 |--------------------------|------------------------------|------------------|
-| Query frequency          | ~every 12 s (1 per block)    | Not configurable |
+| Query frequency          | Async, 1 send per block; ≤ 10 s recv timeout | Not configurable |
 | Score window             | Rolling 100 tasks, equal weight | `validator/config.py` |
 | Weight submission        | Once per tempo (360 blocks)  | `tempo` hyperparameter |
 | N_min for exec support   | 30 tasks per tempo           | `EXEC_SUPPORT_N_MIN` |
-| Benchmark version signal | `axon.info.version`          | PR + ≥3 sign-offs |
+| Benchmark version signal | `axon.info.description` string + `__spec_version__` int | PR + ≥3 sign-offs |
 | Warmup threshold         | 20 tasks                     | `WARMUP_TASK_THRESHOLD` |
-| Scoring version          | `SCORING_VERSION = "1.0.0"`  | ≥67% validator vote |
+| Scoring version          | `__spec_version__ = 10000` (int) + description string | ≥67% validator vote |
 
 ---
 
@@ -512,6 +715,23 @@ Benchmark composition: 15–20% synthetic ground truth, 80–85% real-world task
 - **Deterministic consensus:** Outlier validators detectable from the weights matrix. Yuma's bond mechanism progressively reduces rewards for persistent outliers.
 - **Exec support access:** Only validators meeting N_min per tempo receive subsidy. Lazy validators self-exclude.
 - **Delegation signal:** Stakers monitor validator history via the public dashboard and move stake to higher-quality validators.
+
+> **vtrust bootstrap period (fix: expected behaviour, not a bug):**
+> New validators start with `vtrust = 0.0` at registration. Bittensor's Yuma
+> Consensus only grants vtrust as a validator's submitted weights converge with
+> the stake-weighted consensus over multiple tempos. During the **first 5–10 tempos**
+> (~6–12 hours at 360-block tempos), a new validator earns minimal emissions even if
+> their hardware is perfect and their scoring is accurate. This is **expected
+> Bittensor behaviour**, not a broken setup.
+>
+> New validators should:
+> 1. Confirm their axon is reachable and UID is registered:
+>    `btcli subnet metagraph --netuid <netuid>` — look for your hotkey in the output.
+> 2. Monitor `vtrust` in the metagraph — it should begin climbing after tempo 3–5
+>    as bonds accumulate.
+> 3. Expect near-zero Alpha earnings for the first 12–24 hours. If vtrust is still
+>    0.0 after tempo 10, check weight submission logs for `CommittingWeightsTooFast`
+>    or signature errors.
 
 ---
 
@@ -540,7 +760,7 @@ The dTAO AMM pool maintains TAO/CSWON Alpha liquidity automatically:
 Phase 3 fees are **gateway-collected**, not protocol-enforced. Bittensor's Subtensor has no native fee interception mechanism. This is an explicit design choice for MVP.
 
 ```
-Workflow fee = 5% of actual TAO spent in a workflow 
+Workflow fee = 5% of actual TAO spent in a workflow
 (collected at the C-SWON API Gateway for requests routed through it)
 
 Example: a workflow costing 0.0072τ generates a fee of 0.00036τ
@@ -585,7 +805,7 @@ execute_workflow(plan) · monitor_execution(workflow_id)"]
 
     subgraph SL["C-SWON Subnet Layer"]
         V["Validators (5–20)
-· Deterministic task: block % len(benchmarks)
+· VRF task: hash(hotkey+block) % len(benchmarks)
 · Docker sandbox execution
 · ROUGE-L · test runner · checklist quality scoring
 · Immunity warm-up scale for new miners
@@ -633,8 +853,8 @@ sequenceDiagram
     participant M as Miner Pool
     participant P as Partner Subnets (off-chain)
 
-    Note over V: task_index = block % len(benchmarks)
-    V->>M: Task Package (same task at same block for ALL validators)
+    Note over V: seed=hash(validator_hotkey+block); task=benchmarks[seed%len]
+    V->>M: Task Package (validator-specific pseudorandom task at this block)
     M-->>V: Workflow Plans (DataRef-compliant, includes scoring_version)
 
     Note over V: Sandboxed Docker execution
@@ -671,6 +891,13 @@ sequenceDiagram
 | Scoring formula version split | Divergent weights during upgrades | `SCORING_VERSION` in axon metadata; ≥67% stake vote; 2-tempo notice before upgrade |
 | LLM judge dependency (v2) | Recursive call / non-determinism | v1 uses ROUGE-L + test runners only; LLM judge is a named v2 upgrade path |
 | Gateway fee centralization | Fee model requires centralized gateway | Explicitly acknowledged; trustless fee module is Phase 4 R&D |
+| Pre-caching attack (miners memorise all tasks) | Miners serve cached plans; no real orchestration intelligence tested | VRF-style task schedule keyed to `(validator_hotkey, block)`; miners cannot predict per-validator task stream |
+| Score reassignment by dishonest validator | Validator attributes good miner A plan to miner B | Mandatory `dendrite.hotkey == metagraph.hotkeys[uid]` check before accepting any response |
+| Partner subnet non-determinism | Different validators call different partner miners; scores diverge | Canonical routing policy (top-3 stake-weighted miners, median/majority aggregation) encoded in benchmark JSON |
+| Validator budget bleed via fake estimates | Malicious miners force expensive sandbox executions | Abort at min(max_budget_tao, 1.5× estimated_cost); remaining nodes unexecuted; S_cost = 0 |
+| Buggy benchmark task (always scores 0) | Broken task becomes permanent dead weight | Quarantine trigger: >70% miners <0.10 for 3 tempos → quarantine → remove after 5 tempos |
+| New validator vtrust confusion | Validators quit after day 1 seeing zero earnings | vtrust bootstrap note in Section 4.10; expected 0 for first 5–10 tempos |
+| No runnable code at launch | No one can actually participate | Quickstart guide (Section 10) + required repo layout defined |
 
 ---
 
@@ -678,8 +905,7 @@ sequenceDiagram
 
 ### The Problem and Why It Matters
 
-Bittensor has become a rich ecosystem of 100+ specialised subnets, but no native layer
-exists to compose them into reliable, optimised workflows. Today, developers face:
+Bittensor has become a rich ecosystem of 100+ specialised subnets, but no native layer exists to compose them into reliable, optimised workflows. Today, developers face:
 
 - **Manual orchestration:** Every team hand-wires calls to 5–10 subnets per app.
 - **No objective benchmarks:** No standard for measuring which subnet combinations work best for a given task.
@@ -741,9 +967,7 @@ C-SWON's primary users are **agent platform builders** — teams building on Tar
 2. **RAG + Fact-Check Stack:** `Document subnet → Text subnet → SN70 (verify)`. Result: Trustworthy AI responses for regulated industries.
 3. **Multi-Model Consensus:** `3× text subnets → SN70 → confidence aggregation`. Result: High-reliability outputs for legal, medical, and financial tasks.
 
-**Secondary users:** Bittensor subnet operators who benefit from increased traffic
-from being included in popular C-SWON workflows — making them natural ecosystem
-promoters.
+**Secondary users:** Bittensor subnet operators who benefit from increased traffic from being included in popular C-SWON workflows — making them natural ecosystem promoters.
 
 ### Distribution Channels
 
@@ -766,8 +990,7 @@ promoters.
 
 ## 9. Known Limitations and Upgrade Path
 
-The following items are intentionally deferred from v1 to keep the MVP honest and
-buildable on testnet. They are not design failures — they are explicit decisions.
+The following items are intentionally deferred from v1 to keep the MVP honest and buildable on testnet. They are not design failures — they are explicit decisions.
 
 | Limitation | v1 Approach | Upgrade Path |
 |------------|-------------|--------------|
@@ -777,8 +1000,156 @@ buildable on testnet. They are not design failures — they are explicit decisio
 | Manual Execution Support Pool | Owner transfers each tempo | Multi-sig governance contract (Phase 4) |
 | No on-chain slashing | Economic + governance penalties only | Slashing if added to Bittensor protocol |
 | Social scoring upgrade protocol | ≥67% stake vote + 2-tempo notice | Automated via governance module (Phase 3+) |
+| Parallel DAG semantics undefined | Sequential-only spec in v1 | Fixed in Section 3.2: parallel tiers, per-node DataRef failure scoping |
+| Planned retries penalised | Error handling disincentivised | Fixed in Section 2.2: only unplanned_retries scored |
+| axon.info.version type mismatch | SCORING_VERSION silently broken | Fixed in Section 4.5: __spec_version__ int + description string |
+| Buggy benchmark task stuck at 0 | Dead weight in scoring pool | Fixed in Section 4.7: quarantine + auto-remove lifecycle |
+
 
 ---
+
+## 10. Quickstart Guide
+
+> Referenced code paths (`neurons/miner.py`, `neurons/validator.py`, `validator/`)
+> must exist in the repository before mainnet launch. This section defines the
+> **required file layout** and the exact commands participants will run.
+
+### Repository Layout (Required)
+
+```
+C-SWON/
+├── neurons/
+│   ├── miner.py         # Miner entry point
+│   └── validator.py     # Validator entry point
+├── cswon/
+│   ├── protocol.py      # WorkflowSynapse definition
+│   ├── scoring.py       # Composite scoring formula (SCORING_VERSION pinned here)
+│   ├── executor.py      # Docker sandbox + DataRef resolver
+│   └── benchmarks/
+│       └── v1.json      # Benchmark task dataset (versioned) — MUST be populated before testnet launch;
+│                            #   minimum 10 tasks for demo; full 50 required before mainnet
+├── validator/
+│   ├── config.py        # EXEC_SUPPORT_N_MIN, WARMUP_TASK_THRESHOLD, etc.
+│   ├── weight_setter.py # Tempo-aligned set_weights() call
+│   ├── scoring.py       # get_miner_weight() with warmup scale
+│   ├── miner_selection.py  # 3× query boost for early miners
+│   └── query_loop.py    # Async query loop (QUERY_TIMEOUT_S = 9)
+├── requirements.txt
+├── setup.py
+└── README.md
+```
+
+---
+
+### Miner Quickstart
+
+**Step 1 — Clone and install**
+
+```bash
+git clone https://github.com/adysingh5711/C-SWON.git
+cd C-SWON
+pip install -r requirements.txt
+```
+
+**Step 2 — Create wallet**
+
+```bash
+btcli wallet new_coldkey --wallet.name my_miner
+btcli wallet new_hotkey  --wallet.name my_miner --wallet.hotkey default
+```
+
+**Step 3 — Register on the subnet**
+
+```bash
+# Testnet — find current netuid with:
+#   btcli subnet list --subtensor.network test
+# Then register:
+btcli subnet register \
+  --netuid <testnet_netuid> \
+  --wallet.name my_miner \
+  --wallet.hotkey default \
+  --subtensor.network test
+
+# Mainnet (once subnet is live)
+btcli subnet register   --netuid <mainnet_netuid>   --wallet.name my_miner   --wallet.hotkey default
+```
+
+**Step 4 — Run the miner**
+
+```bash
+python neurons/miner.py   --netuid <netuid>   --wallet.name my_miner   --wallet.hotkey default   --axon.port 8091   --subtensor.network <test|finney>
+```
+
+**Step 5 — Check you are reachable**
+
+```bash
+btcli subnet metagraph --netuid <netuid>
+# Confirm your UID appears and axon IP:port is visible
+```
+
+**Expected behaviour:**
+- Immediately after registration: `trust = 0`, `emission = 0`. This is normal.
+- After first few tempos: `incentive` and `emission` will begin to appear once
+  validators query and score your workflows.
+
+---
+
+### Validator Quickstart
+
+**Step 1–2:** Same as miner (clone, install, create wallet).
+
+**Step 3 — Register on the subnet** *(same command as miner, different wallet name)*
+
+**Step 4 — Ensure Docker is running**
+
+```bash
+docker info   # must succeed; Docker 24.x+ required
+```
+
+**Step 5 — Configure execution mode**
+
+```bash
+# Testnet / early mainnet: mock mode (no real TAO burned)
+export CSWON_MOCK_EXEC=true
+
+# Mainnet with live execution (NOT needed for testnet demo):
+export CSWON_MOCK_EXEC=false
+export CSWON_PARTNER_HOTKEY=<your_registered_hotkey_on_partner_subnets>
+# NOTE: Partner subnets (SN1, SN62 etc.) are not available on testnet.
+# For the testnet demo, always use CSWON_MOCK_EXEC=true.
+```
+
+**Step 6 — Run the validator**
+
+```bash
+python neurons/validator.py   --netuid <netuid>   --wallet.name my_validator   --wallet.hotkey default   --axon.port 8092   --subtensor.network <test|finney>
+```
+
+**Step 7 — Verify weight submission**
+
+```bash
+btcli subnet metagraph --netuid <netuid>
+# After first tempo (~72 min), your UID should show vtrust > 0
+# and weights column should be non-zero
+```
+
+**Expected behaviour:**
+- `vtrust = 0.0` for first 5–10 tempos. This is expected (see Section 4.10).
+- If vtrust is still 0 after tempo 10: check logs for `CommittingWeightsTooFast`
+  or run `btcli subnet metagraph --netuid <netuid>` and inspect your UID row.
+
+---
+
+### Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `CommittingWeightsTooFast` | Submitting weights more than once per tempo | Check `last_set_block` logic in `weight_setter.py` |
+| `Axon not reachable` | Port not open externally | Open port 8091/8092 in firewall; confirm with `curl http://<your_ip>:8091/` |
+| `vtrust = 0.0` after 10 tempos | Weights not being accepted | Check `set_weights()` return value; ensure UID is not in `immunity_period` |
+| `CSWON_MOCK_EXEC missing` | Env var not set | `export CSWON_MOCK_EXEC=true` before running validator |
+| Docker permission denied | Docker daemon not accessible | Run `sudo usermod -aG docker $USER && newgrp docker` |
+
 
 ## Conclusion
 
