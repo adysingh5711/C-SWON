@@ -7,7 +7,7 @@ import pytest
 import asyncio
 import bittensor as bt
 from cswon.mock import MockDendrite, MockMetagraph, MockSubtensor
-from cswon.protocol import WorkflowSynapse, Dummy
+from cswon.protocol import WorkflowSynapse
 
 
 @pytest.mark.parametrize("netuid", [1, 2, 3])
@@ -72,24 +72,3 @@ def test_mock_dendrite_workflow_synapse():
             assert resp.scoring_version is not None
             assert resp.confidence is not None
 
-
-def test_mock_dendrite_legacy_dummy():
-    """Test backward compatibility with Dummy synapse."""
-    mock_wallet = bt.MockWallet()
-    mock_dendrite = MockDendrite(mock_wallet)
-    mock_subtensor = MockSubtensor(netuid=1, n=4, wallet=mock_wallet)
-    mock_metagraph = MockMetagraph(subtensor=mock_subtensor)
-    axons = mock_metagraph.axons
-
-    async def run():
-        return await mock_dendrite.forward(
-            axons=axons,
-            synapse=Dummy(dummy_input=5),
-            timeout=10.0,
-            deserialize=False,
-        )
-
-    responses = asyncio.run(run())
-    for resp in responses:
-        if resp.dendrite and resp.dendrite.status_code == 200:
-            assert resp.dummy_output == 10  # 5 * 2

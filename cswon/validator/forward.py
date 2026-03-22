@@ -46,6 +46,7 @@ from cswon.validator.executor import execute_workflow_async
 from cswon.validator.reward import (
     score_output_quality,
     compute_composite_score,
+    get_miner_weight,
 )
 from cswon.validator.benchmark_lifecycle import BenchmarkLifecycleTracker
 
@@ -263,6 +264,10 @@ async def forward(self):
         metagraph=self.metagraph,
         k=self.config.neuron.sample_size,
         exclude=[self.uid],
+        subtensor=self.subtensor,           # ← chain immunity lookup (fix 2.5)
+        netuid=self.config.netuid,           # ← chain immunity lookup (fix 2.5)
+        current_block=self.block,            # ← chain immunity lookup (fix 2.5)
+        subnet_launch_block=getattr(self, "subnet_launch_block", None),
     )
 
     if len(miner_uids) == 0:
@@ -335,12 +340,19 @@ async def forward(self):
             reference=reference,
         )
 
-        # For synthetic tasks, override with known ground-truth scoring
+        # For synthetic tasks, blend structural match with standard quality score (fix 2.4)
         if is_synthetic and "optimal_workflow" in reference:
-            # Compare miner's plan against optimal — here we still use
-            # quality scoring since the reference answer is embedded.
+            optimal = reference["optimal_workflow"]
+            miner_nodes = set(
+                n.get("subnet") for n in (response.workflow_plan or {}).get("nodes", [])
+            )
+            optimal_nodes = set(n.get("subnet") for n in optimal.get("nodes", []))
+            struct_score = len(miner_nodes & optimal_nodes) / max(1, len(optimal_nodes))
+            # Blend: 50% standard quality + 50% structural DAG match
+            output_quality = 0.5 * output_quality + 0.5 * struct_score
             bt.logging.debug(
-                f"Synthetic task {task_id}: scoring against ground truth reference"
+                f"Synthetic task {task_id}: struct_score={struct_score:.3f} "
+                f"blended_quality={output_quality:.3f}"
             )
 
         # Stage 5: Composite scoring
@@ -376,18 +388,30 @@ async def forward(self):
         f"Scored {len(scores)} miners: mean={np.mean(scores):.4f}" if scores else "No scores"
     )
 
-    # 6a. Update the score aggregator (equal-weight rolling 100-task window, readme §2.2)
+    # 6a. Update the score aggregator — apply immunity warm-up scale before adding (fix 1.1)
     if hasattr(self, "score_aggregator"):
-        for uid, score in zip(valid_uids, scores):
-            self.score_aggregator.add_score(uid, score)
+        for uid, composite_score in zip(valid_uids, scores):
+            weighted_score = get_miner_weight(
+                miner_uid=uid,
+                tasks_seen=self.score_aggregator.tasks_seen[uid],
+                raw_score=composite_score,
+                subtensor=self.subtensor,
+                netuid=self.config.netuid,
+                current_block=self.block,
+            )
+            self.score_aggregator.add_score(uid, weighted_score)
     else:
         bt.logging.warning("score_aggregator not initialised — cannot update rolling window")
 
     # 6b. Feed per-task scores into lifecycle tracker (readme §4.7)
     tracker.record_task_score(task_id, scores)
 
-    # 6c. Increment N_min counter (readme §4.6)
+    # 6c. Increment N_min counter — use persisted value from score_aggregator (fix 2.8)
+    # The counter is owned here in module state; save_state() persists it.
     _tasks_executed_this_tempo += 1
+    # Sync back to score_aggregator so save_state() can persist it
+    if hasattr(self, "score_aggregator"):
+        self.score_aggregator.tasks_executed_this_tempo = _tasks_executed_this_tempo
 
     # 6d. At tempo boundary: flush lifecycle changes + log exec support eligibility
     current_tempo = self.block // TEMPO
@@ -401,6 +425,8 @@ async def forward(self):
             f"EXEC_SUPPORT_ELIGIBLE: {eligible}"
         )
         _tasks_executed_this_tempo = 0
+        if hasattr(self, "score_aggregator"):
+            self.score_aggregator.tasks_executed_this_tempo = 0
         tracker.on_tempo_end()
 
     time.sleep(2)

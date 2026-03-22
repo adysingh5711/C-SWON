@@ -93,6 +93,19 @@ class Miner(BaseMinerNeuron):
             f"est_cost={synapse.total_estimated_cost:.4f}τ"
         )
 
+        # Fix 1.3: record execution observations so the profiler builds real history.
+        # In this testnet implementation the executor is sandboxed/mock, so we record
+        # the estimated values as a proxy until live execution is wired in (fix 1.4).
+        for node in workflow_plan.get("nodes", []):
+            subnet_id = node.get("subnet", "")
+            if subnet_id:
+                self.profiler.record_observation(
+                    subnet_id=subnet_id,
+                    cost=node.get("estimated_cost", 0.0),
+                    latency=node.get("estimated_latency", 0.0),
+                    success=True,
+                )
+
         return synapse
 
     def _design_workflow(self, synapse: WorkflowSynapse, enriched_tools: dict = None) -> dict:
@@ -276,16 +289,27 @@ class Miner(BaseMinerNeuron):
 
         return nodes, edges, error_handling
 
-    def _pick_subnet(self, tools, allowed, preferred_types):
-        """Pick the best available subnet for the given task type."""
+    def _pick_subnet(self, tools, allowed, preferred_types, max_budget=None):
+        """Pick the best available subnet ranked by avg_cost then avg_latency (fix 2.2)."""
+        candidates = []
         for subnet_id, info in tools.items():
             if subnet_id in allowed and info.get("type") in preferred_types:
-                return subnet_id
-        # Fallback: pick first allowed subnet
-        for subnet_id in allowed:
-            if subnet_id in tools:
-                return subnet_id
-        return list(tools.keys())[0] if tools else None
+                candidates.append((
+                    subnet_id,
+                    info.get("avg_cost", 999),
+                    info.get("avg_latency", 999),
+                ))
+        if not candidates:
+            # Fallback: any allowed subnet regardless of type
+            candidates = [
+                (s, tools[s].get("avg_cost", 999), tools[s].get("avg_latency", 999))
+                for s in allowed if s in tools
+            ]
+        if not candidates:
+            return list(tools.keys())[0] if tools else None
+        # Sort by cost (primary), then latency (secondary)
+        candidates.sort(key=lambda x: (x[1], x[2]))
+        return candidates[0][0]
 
     def _estimate_total_cost(self, workflow_plan):
         """Sum estimated costs across all nodes."""
@@ -294,10 +318,25 @@ class Miner(BaseMinerNeuron):
         )
 
     def _estimate_total_latency(self, workflow_plan):
-        """Sum estimated latencies (conservative sequential estimate)."""
-        return sum(
-            n.get("estimated_latency", 0.0) for n in workflow_plan.get("nodes", [])
-        )
+        """Estimate total latency using tier-max for parallel DAGs (fix 2.3).
+
+        For nodes in the same parallel tier, the effective latency is max()
+        not sum(), since they execute concurrently.
+        """
+        from cswon.validator.executor import topological_sort_tiers
+        nodes = workflow_plan.get("nodes", [])
+        edges = workflow_plan.get("edges", [])
+        if not nodes:
+            return 0.0
+        node_map = {n["id"]: n for n in nodes}
+        tiers = topological_sort_tiers(nodes, edges)
+        total = 0.0
+        for tier in tiers:
+            tier_max = max(
+                node_map[nid].get("estimated_latency", 0.0) for nid in tier
+            )
+            total += tier_max
+        return total
 
     def _compute_confidence(self, synapse, plan):
         """Compute a confidence score based on plan quality."""

@@ -44,11 +44,12 @@ class Validator(BaseValidatorNeuron):
     def __init__(self, config=None):
         super(Validator, self).__init__(config=config)
 
+        # Initialise the score aggregator BEFORE load_state() so restored data
+        # is not silently discarded (fix 1.2 Bug B: init order correction).
+        self.score_aggregator = ScoreAggregator()
+
         bt.logging.info("load_state()")
         self.load_state()
-
-        # Initialise the score aggregator (rolling 100-task window)
-        self.score_aggregator = ScoreAggregator()
 
         bt.logging.info("C-SWON Validator initialised")
 

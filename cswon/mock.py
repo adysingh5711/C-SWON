@@ -50,7 +50,7 @@ class MockSubtensor(bt.MockSubtensor):
             )
 
 
-class MockMetagraph(bt.metagraph):
+class MockMetagraph(bt.Metagraph):
     """Mock metagraph for local testing."""
 
     def __init__(self, netuid=1, network="mock", subtensor=None):
@@ -68,7 +68,7 @@ class MockMetagraph(bt.metagraph):
         bt.logging.info(f"Mock Axons: {self.axons}")
 
 
-class MockDendrite(bt.dendrite):
+class MockDendrite(bt.Dendrite):
     """
     Mock dendrite that returns plausible WorkflowSynapse responses
     without making real network calls. Used for local testing.
@@ -79,7 +79,7 @@ class MockDendrite(bt.dendrite):
 
     async def forward(
         self,
-        axons: List[bt.axon],
+        axons: List[bt.AxonInfo],
         synapse: bt.Synapse = bt.Synapse(),
         timeout: float = 12,
         deserialize: bool = True,

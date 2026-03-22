@@ -211,3 +211,50 @@ When you are creating an enhancement suggestion, please [include as many details
 * **Specify the name and version of the OS you're using.**
 
 Thank you for considering contributing to Bittensor! Any help is greatly appreciated along this journey to incentivize open and permissionless intelligence.
+
+---
+
+## C-SWON Continuous Integration (CircleCI)
+
+All pull requests are automatically validated by the C-SWON CI pipeline defined in [`.circleci/config.yml`](../.circleci/config.yml). You **must** pass every CI check before a PR can be merged.
+
+### CI Jobs
+
+| Job | Purpose | When it runs |
+|-----|---------|-------------|
+| `lint` | Runs `black --check` and `flake8` on the entire codebase | Every push |
+| `test` | Runs `pytest tests/ -v --tb=short` | Every push |
+| `docker-build` | Builds the `Dockerfile` for the validator sandbox | Every push to `main` / `testnet` |
+
+### Reproducing CI Locally
+
+Before pushing, run the same checks locally:
+
+```bash
+# 1. Install dev dependencies
+pip install -r requirements.txt
+
+# 2. Format check (must pass without any diff)
+black --check .
+
+# 3. Lint
+flake8 cswon/ neurons/ scripts/ --max-line-length=120 --extend-ignore=E501
+
+# 4. Test suite
+pytest tests/ -v --tb=short
+
+# 5. (Optional) Build the Docker sandbox image
+docker build -f Dockerfile -t cswon-validator-sandbox:local .
+```
+
+### CI Artifacts
+
+- Test results are uploaded as CircleCI artifacts under `test-results/`.
+- Coverage reports (HTML) are stored at `coverage_html_report/` and linked in the PR check summary.
+
+### Bypassing CI
+
+CI checks **cannot** be bypassed. If a job fails, fix the issue, push a new commit, and the checks will re-run automatically.
+
+> **Note:** The `docker-build` job requires Docker credentials to be set in CircleCI project settings (`DOCKER_USER` and `DOCKER_PASS` environment variables). This is pre-configured for the canonical repository; contributors working on forks may skip this job by using a draft PR.
+

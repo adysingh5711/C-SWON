@@ -1008,17 +1008,18 @@ The following items are intentionally deferred from v1 to keep the MVP honest an
 
 ```
 C-SWON/
+├── .circleci/
+│   └── config.yml                   ← CI pipeline: lint, test, docker-build jobs
 ├── benchmarks/
 │   └── v1.json
 ├── contrib/
 │   ├── CODE_REVIEW_DOCS.md
-│   ├── CONTRIBUTING.md
+│   ├── CONTRIBUTING.md              ← includes CircleCI documentation
 │   ├── DEVELOPMENT_WORKFLOW.md
 │   └── STYLE.md
 ├── cswon/
 │   ├── api/
 │   │   ├── __init__.py
-│   │   ├── dummy.py
 │   │   └── get_query_axons.py
 │   ├── base/
 │   │   ├── utils/
@@ -1028,6 +1029,9 @@ C-SWON/
 │   │   ├── miner.py
 │   │   ├── neuron.py
 │   │   └── validator.py
+│   ├── miner/
+│   │   ├── __init__.py
+│   │   └── subnet_profiler.py       ← subnet cost/latency profiler (§3.6)
 │   ├── utils/
 │   │   ├── __init__.py
 │   │   ├── config.py
@@ -1036,16 +1040,21 @@ C-SWON/
 │   │   └── uids.py
 │   ├── validator/
 │   │   ├── __init__.py
+│   │   ├── base.py                  ← re-exports BaseValidatorNeuron
+│   │   ├── benchmark_lifecycle.py   ← quarantine/deprecation + quarterly rotation (§4.7)
 │   │   ├── config.py
-│   │   ├── executor.py
-│   │   ├── forward.py
-│   │   ├── miner_selection.py
-│   │   ├── query_loop.py
-│   │   ├── reward.py
-│   │   └── weight_setter.py
+│   │   ├── docker_sandbox.py        ← Docker sandbox runner (§4.8 stage 3)
+│   │   ├── executor.py              ← parallel-tier DAG execution (§4.8)
+│   │   ├── executor_entrypoint.py   ← Docker container entry module (§4.8)
+│   │   ├── forward.py               ← six-stage validator pipeline
+│   │   ├── miner_selection.py       ← immunity-aware miner selection
+│   │   ├── query_loop.py            ← async sub-block query loop (§4.1)
+│   │   ├── reward.py                ← composite scoring + warm-up scale (§4.4)
+│   │   ├── scoring.py               ← re-exports scoring symbols
+│   │   └── weight_setter.py         ← tempo-aligned weight submission (§4.1)
 │   ├── __init__.py
 │   ├── mock.py
-│   ├── protocol.py
+│   ├── protocol.py                  ← WorkflowSynapse only (Dummy removed)
 │   └── subnet_links.py
 ├── docs/
 │   ├── stream_tutorial/
@@ -1054,6 +1063,7 @@ C-SWON/
 │   │   ├── miner.py
 │   │   ├── protocol.py
 │   │   └── README.md
+│   ├── ops_runbook.md               ← Execution Support Pool operator runbook (§4.6)
 │   ├── running_on_mainnet.md
 │   ├── running_on_staging.md
 │   └── running_on_testnet.md
@@ -1064,6 +1074,7 @@ C-SWON/
 ├── scripts/
 │   ├── check_compatibility.sh
 │   ├── check_requirements_changes.sh
+│   ├── exec_support_payout.py       ← Exec Support Pool payout tool (§4.6)
 │   └── install_staging.sh
 ├── tests/
 │   ├── __init__.py
@@ -1074,8 +1085,9 @@ C-SWON/
 │   ├── test_scoring.py
 │   └── test_template_validator.py
 ├── verify/
-│   ├── generate.py
-│   └── verify.py
+│   ├── generate.py                  ← signs coldkey messages for identity verification
+│   └── verify.py                    ← verifies coldkey signatures
+├── Dockerfile                       ← builds cswon-executor:latest sandbox image (§4.8)
 ├── LICENSE
 ├── min_compute.yml
 ├── README.md

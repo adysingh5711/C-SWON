@@ -57,11 +57,12 @@ class SubnetProfiler:
 
     def refresh(self, metagraph: "bt.metagraph", current_block: int) -> None:
         """
-        Refresh subnet profiles from the metagraph every 100 blocks (readme §3.6).
+        Refresh subnet profiles from the metagraph every 100 blocks (readme §3.6, fix 2.1).
 
-        In v1, this reads metagraph.axons to discover which subnets are live.
-        Actual probe calls to partner subnets are stubbed — in production, the
-        miner would make lightweight probe queries here to gather real metrics.
+        Iterates serving axons in the metagraph and records a lightweight latency
+        probe observation for each. In v1 (testnet), a socket connect is used as
+        a proxy for round-trip latency. In v2, a real HealthSynapse dendrite
+        call will replace this.
 
         Args:
             metagraph: The current metagraph snapshot.
@@ -77,9 +78,28 @@ class SubnetProfiler:
             f"Currently tracking {len(self._cost_history)} subnets."
         )
 
-        # Stub: in a production implementation this would probe known partner
-        # subnet axons and record real round-trip latency and cost.
-        # For now we log the refresh timestamp so the framework is in place.
+        import socket
+        probed = 0
+        for uid in range(int(metagraph.n)):
+            axon = metagraph.axons[uid]
+            if not axon.is_serving:
+                continue
+            subnet_id = f"SN{uid}"
+            t0 = time.time()
+            try:
+                # Lightweight TCP connect probe — measures reachability + round-trip
+                with socket.create_connection((axon.ip, axon.port), timeout=2.0):
+                    pass
+                latency = time.time() - t0
+                self.record_observation(subnet_id, cost=0.0, latency=latency, success=True)
+            except Exception:
+                latency = time.time() - t0
+                self.record_observation(subnet_id, cost=0.0, latency=latency, success=False)
+            probed += 1
+
+        bt.logging.debug(
+            f"SubnetProfiler: probed {probed} serving axons at block {current_block}."
+        )
 
     def record_observation(
         self,

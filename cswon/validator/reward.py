@@ -105,7 +105,7 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
 
             return 0.7 * test_score + 0.3 * lint_score
 
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
         bt.logging.warning("Code test runner unavailable; falling back to pattern match")
 
     # Fallback: expected_patterns keyword check
@@ -359,13 +359,21 @@ class ScoreAggregator:
         # miner_uid -> number of tasks seen (for warmup)
         self.tasks_seen: Dict[int, int] = defaultdict(int)
 
-    def add_score(self, miner_uid: int, score: float):
-        """Add a score to a miner's rolling window."""
-        window = self.score_windows[miner_uid]
+    def add_score(self, miner_uid: int = None, score: float = 0.0, *, uid: int = None):
+        """Add a score to a miner's rolling window.
+
+        Accepts both ``miner_uid`` (canonical) and ``uid`` (test-suite alias)
+        as positional-or-keyword arguments to maintain backward compatibility.
+        """
+        # Resolve uid alias — uid= takes precedence if miner_uid is unset
+        resolved_uid = miner_uid if miner_uid is not None else uid
+        if resolved_uid is None:
+            raise TypeError("add_score() requires miner_uid or uid argument")
+        window = self.score_windows[resolved_uid]
         window.append(score)
         if len(window) > self.window_size:
             window.pop(0)  # remove oldest
-        self.tasks_seen[miner_uid] += 1
+        self.tasks_seen[resolved_uid] += 1
 
     def get_average_score(self, miner_uid: int) -> float:
         """Get equal-weight average score for a miner."""

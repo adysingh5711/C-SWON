@@ -1,3 +1,22 @@
+"""
+verify/generate.py — Coldkey Message Signer (C-SWON verification utility)
+
+Generates a cryptographically signed message using a Bittensor coldkey wallet.
+Used to prove ownership of a wallet address off-chain (e.g. for subnet
+participant verification or dispute resolution).
+
+Usage:
+    python verify/generate.py --name <wallet_name> --message "I acknowledge the C-SWON rules"
+
+Outputs:
+    Prints the signed message to stdout.
+    Saves the message and signature to `message_and_signature.txt`.
+    The signature can be verified with `verify/verify.py`.
+
+See also:
+    verify/verify.py — verifies signatures produced by this script.
+"""
+
 from datetime import datetime
 
 import bittensor

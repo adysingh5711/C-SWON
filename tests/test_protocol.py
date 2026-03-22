@@ -4,7 +4,7 @@ Validates synapse structure, field types, and serialization per readme §3.2b.
 """
 
 import pytest
-from cswon.protocol import WorkflowSynapse, Dummy
+from cswon.protocol import WorkflowSynapse
 
 
 class TestWorkflowSynapse:
@@ -102,16 +102,3 @@ class TestWorkflowSynapse:
         assert len(s.workflow_plan["edges"]) == 2
         assert s.workflow_plan["error_handling"]["step_1"]["retry_count"] == 2
 
-
-class TestDummyBackCompat:
-    """Ensure legacy Dummy synapse still works."""
-
-    def test_dummy_basic(self):
-        d = Dummy(dummy_input=5)
-        assert d.dummy_input == 5
-        assert d.dummy_output is None
-
-    def test_dummy_deserialize(self):
-        d = Dummy(dummy_input=5)
-        d.dummy_output = 10
-        assert d.deserialize() == 10

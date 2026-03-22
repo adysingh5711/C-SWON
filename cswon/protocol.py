@@ -59,14 +59,3 @@ class WorkflowSynapse(bt.Synapse):
         return self
 
 
-class Dummy(bt.Synapse):
-    """
-    Legacy dummy protocol kept for backward-compatible mock tests.
-    Will be removed in v2.
-    """
-
-    dummy_input: int
-    dummy_output: Optional[int] = None
-
-    def deserialize(self) -> int:
-        return self.dummy_output

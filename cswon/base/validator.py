@@ -1,7 +1,6 @@
 # The MIT License (MIT)
 # Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 C-SWON Contributors
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -19,6 +18,7 @@
 
 
 import copy
+import os
 import numpy as np
 import asyncio
 import argparse
@@ -420,12 +420,15 @@ class BaseValidatorNeuron(BaseNeuron):
             scores=self.scores,
             hotkeys=self.hotkeys,
         )
-        # Persist ScoreAggregator rolling window (issue 3.10)
+        # Persist ScoreAggregator rolling window + tasks_executed_this_tempo (fix 2.8)
         if hasattr(self, "score_aggregator"):
             agg_path = pathlib.Path(self.config.neuron.full_path) / "score_aggregator.json"
             agg_data = {
                 "score_windows": {str(k): list(v) for k, v in self.score_aggregator.score_windows.items()},
                 "tasks_seen":    {str(k): v for k, v in self.score_aggregator.tasks_seen.items()},
+                "tasks_executed_this_tempo": getattr(
+                    self.score_aggregator, "tasks_executed_this_tempo", 0
+                ),
             }
             try:
                 agg_path.write_text(json.dumps(agg_data))
@@ -433,14 +436,18 @@ class BaseValidatorNeuron(BaseNeuron):
                 bt.logging.warning(f"Could not save ScoreAggregator state: {e}")
 
     def load_state(self):
-        """Loads the state of the validator from a file, including ScoreAggregator (issue 3.10)."""
+        """Loads the state of the validator from a file, including ScoreAggregator (fix 1.2, fix 2.8)."""
         import json, pathlib
         bt.logging.info("Loading validator state.")
-        state = np.load(self.config.neuron.full_path + "/state.npz")
+        state_path = self.config.neuron.full_path + "/state.npz"
+        if not os.path.exists(state_path):
+            bt.logging.info("No saved state found — starting fresh.")
+            return   # ← first-run guard (fix 1.2): prevents FileNotFoundError on new validators
+        state = np.load(state_path)
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]
-        # Restore ScoreAggregator rolling window
+        # Restore ScoreAggregator rolling window + tasks_executed_this_tempo (fix 2.8)
         agg_path = pathlib.Path(self.config.neuron.full_path) / "score_aggregator.json"
         if hasattr(self, "score_aggregator") and agg_path.exists():
             try:
@@ -449,6 +456,15 @@ class BaseValidatorNeuron(BaseNeuron):
                     self.score_aggregator.score_windows[int(k)] = list(v)
                 for k, v in agg_data.get("tasks_seen", {}).items():
                     self.score_aggregator.tasks_seen[int(k)] = int(v)
-                bt.logging.info("ScoreAggregator state restored from disk.")
+                # Restore tempo counter so N_min eligibility survives restarts (fix 2.8)
+                persisted_count = agg_data.get("tasks_executed_this_tempo", 0)
+                self.score_aggregator.tasks_executed_this_tempo = persisted_count
+                # Also sync the forward.py module-level counter
+                import cswon.validator.forward as _fwd
+                _fwd._tasks_executed_this_tempo = int(persisted_count)
+                bt.logging.info(
+                    f"ScoreAggregator state restored from disk "
+                    f"(tasks_executed_this_tempo={persisted_count})."
+                )
             except Exception as e:
                 bt.logging.warning(f"Could not restore ScoreAggregator state: {e}")

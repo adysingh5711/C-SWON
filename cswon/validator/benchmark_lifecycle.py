@@ -56,6 +56,21 @@ class BenchmarkLifecycleTracker:
         # Accumulator for current tempo: task_id → list of miner composite scores
         self._current_tempo_scores: Dict[str, List[float]] = defaultdict(list)
 
+        # ── Quarterly Forced Rotation (readme §6.3 risk table, fix 3.4) ───────
+        # A quarterly forced rotation ensures no single benchmark set can be
+        # gamed indefinitely, even if it never hits the per-task deprecation
+        # thresholds. The trigger is block-based (~3 months = ~6,480,000 blocks
+        # at 12 s/block). Governance note: the subnet owner should call
+        # trigger_quarterly_rotation() at each quarterly milestone, or automate
+        # it via an on-chain governance proposal.
+        #
+        # Tracking variable: block number of the last completed quarterly rotation.
+        # Default -1 means "never rotated yet" (always eligible on first check).
+        self._last_quarterly_rotation_block: int = -1
+
+        # How many blocks constitute a quarter (~3 months at 12 s/block)
+        self.QUARTERLY_BLOCKS: int = 6_480_000
+
     # ── Per-Round Score Recording ──────────────────────────────────────────
 
     def record_task_score(self, task_id: str, miner_scores: List[float]) -> None:
