@@ -57,6 +57,13 @@ from cswon.validator.benchmark_lifecycle import BenchmarkLifecycleTracker
 SYNTHETIC_INJECTION_RATE = 0.175
 
 
+import hashlib
+import copy
+import os
+
+# Secret salt — set via env var, never hardcoded in repo
+_SYNTHETIC_SALT = os.environ.get("CSWON_SYNTHETIC_SALT", "change-me-in-prod")
+
 # ── Temporal Consistency Constants (readme §2.5, issue 1.5) ─────────────────
 
 # A jump of >50% from the rolling average triggers an audit flag
@@ -80,6 +87,7 @@ _score_history: Dict[int, deque] = defaultdict(lambda: deque(maxlen=10))
 # Audit flag log (issue 3.6) — kept in memory, exposed via HTTP
 _audit_flags: List[dict] = []
 _AUDIT_FLAG_MAX = 500  # cap in-memory list
+_audit_flags_lock = threading.Lock()
 
 
 # ── Monitoring HTTP Server (readme §3.6, issue 3.6) ────────────────────────
@@ -87,7 +95,8 @@ _AUDIT_FLAG_MAX = 500  # cap in-memory list
 class _AuditHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/audit-flags":
-            body = json.dumps(_audit_flags[-100:]).encode()
+            with _audit_flags_lock:
+                body = json.dumps(_audit_flags[-100:]).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -147,31 +156,33 @@ def _get_lifecycle_tracker() -> BenchmarkLifecycleTracker:
 
 # ── Synthetic Injection (readme §2.5, issue 1.4) ─────────────────────────────
 
-def _maybe_inject_synthetic(task: dict) -> dict:
+def _generate_synthetic_task(validator_hotkey: str, block: int, real_task: dict) -> dict:
     """
-    With SYNTHETIC_INJECTION_RATE probability, replace the selected task with a
-    synthetic ground-truth task (readme §2.5).
-
-    Miners cannot distinguish synthetic from real tasks.
-    Validators use the known `reference.optimal_workflow` to score accurately.
-
-    Args:
-        task: The VRF-selected real task.
-
-    Returns:
-        Either the same task or a synthetic replacement.
+    Derive a synthetic variant of a real task at runtime using a secret salt.
+    The salt is known only to validators, so miners cannot identify synthetic tasks
+    by task_id pattern-matching.
     """
-    if not _synthetic_cache:
-        return task  # no synthetic tasks available yet
+    seed = f"{_SYNTHETIC_SALT}:{validator_hotkey}:{block}".encode()
+    h = hashlib.sha256(seed).hexdigest()[:8]
+    synthetic = copy.deepcopy(real_task)
+    # Mutate task_id so it's unique but non-guessable
+    synthetic["task_id"] = f"syn_{h}"
+    synthetic["type"] = "synthetic"
+    # Constraints: tighten slightly to stress-test miners
+    constraints = synthetic.get("constraints", {})
+    synthetic["constraints"] = {
+        **constraints,
+        "max_budget_tao": constraints.get("max_budget_tao", 0.02) * 0.85,
+        "max_latency_seconds": constraints.get("max_latency_seconds", 15) * 0.85,
+    }
+    return synthetic
 
+
+def _maybe_inject_synthetic(task: dict, validator_hotkey: str, block: int) -> dict:
     if random.random() < SYNTHETIC_INJECTION_RATE:
-        chosen = random.choice(_synthetic_cache)
-        bt.logging.debug(
-            f"Synthetic injection: replacing task={task.get('task_id')} "
-            f"with synthetic={chosen.get('task_id')}"
-        )
-        return chosen
-
+        synthetic = _generate_synthetic_task(validator_hotkey, block, task)
+        bt.logging.debug(f"Synthetic injection: real={task.get('task_id')} → synthetic={synthetic['task_id']}")
+        return synthetic
     return task
 
 
@@ -206,9 +217,10 @@ def _check_temporal_consistency(uid: int, score: float, current_block: int) -> N
                 ),
             }
             bt.logging.warning(flag["message"])
-            _audit_flags.append(flag)
-            if len(_audit_flags) > _AUDIT_FLAG_MAX:
-                _audit_flags.pop(0)
+            with _audit_flags_lock:
+                _audit_flags.append(flag)
+                if len(_audit_flags) > _AUDIT_FLAG_MAX:
+                    _audit_flags.pop(0)
 
     history.append(score)
 
@@ -249,7 +261,7 @@ async def forward(self):
     # Synthetic injection (issue 1.4) — must happen AFTER VRF so miners
     # see the same task_id in the synapse but the validator scores against
     # the known ground truth.
-    task = _maybe_inject_synthetic(task)
+    task = _maybe_inject_synthetic(task, self.wallet.hotkey.ss58_address, self.block)
 
     task_id   = task.get("task_id", "unknown")
     task_type = task.get("task_type", "unknown")
@@ -326,6 +338,8 @@ async def forward(self):
             constraints=constraints,
             total_estimated_cost=response.total_estimated_cost or 0.01,
             routing_policy=routing_policy,
+            dendrite=self.dendrite,
+            metagraph=self.metagraph,
         )
 
         completion_ratio = (

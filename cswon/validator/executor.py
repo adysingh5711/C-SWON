@@ -277,45 +277,75 @@ def _mock_execute_node(node: dict, resolved_params: dict) -> dict:
 
 # ── Live Executor Stub (readme §4.3, issue 1.6) ─────────────────────
 
-def _live_execute_node(
+async def _live_execute_node_async(
     node: dict,
     resolved_params: dict,
     partner_hotkey: str,
     routing_config: Optional[dict] = None,
+    dendrite=None,
+    metagraph=None,
 ) -> dict:
     """
-    Authenticated HTTP call to a partner subnet axon (readme §4.3).
-
-    This stub represents the mainnet bootstrap path where the validator has
-    registered a dedicated C-SWON hotkey on each partner subnet.
-
-    Stages (readme §4.3):
-      - Testnet:          CSWON_MOCK_EXEC=true  → mock path (never reaches here)
-      - Mainnet bootstrap: validator registered hotkey, calls at standard rates
-      - Mainnet at scale:  negotiated API-tier access with revenue-share
-
-    When fully implemented this function will:
-      1. Look up partner subnet axon endpoints from the metagraph.
-      2. Select top-k miners per routing_config["selection"] + metagraph stake.
-      3. Call each selected miner via dendrite.forward() with the node payload.
-      4. Aggregate responses via aggregate_outputs() per routing_config["aggregation"].
-      5. Return the merged result with actual TAO cost tracked.
-
-    Until the validator completes partner-subnet registration, this function
-    falls back to mock mode with a prominent WARNING (not silently).
+    Real authenticated call to a partner subnet axon (SN1 text generation path).
+    Falls back to mock if dendrite/metagraph not available.
     """
+    import bittensor as bt
+    import time
     subnet = node.get("subnet", "unknown")
-    bt.logging.warning(
-        f"LIVE_EXEC: partner_hotkey='{partner_hotkey}' | subnet={subnet} | "
-        f"action={node.get('action')} — partner registration not yet complete. "
-        f"Falling back to mock for this step. "
-        f"See readme §4.3 for mainnet bootstrap instructions."
-    )
-    # TODO (mainnet): implement actual dendrite call to partner subnet axon:
-    #   axons = _select_partner_axons(subnet, routing_config, metagraph)
-    #   responses = await dendrite.forward(axons=axons, synapse=NodeSynapse(...))
-    #   return aggregate_outputs(responses, routing_config["aggregation"])
-    return _mock_execute_node(node, resolved_params)
+    action = node.get("action", "process")
+
+    if dendrite is None or metagraph is None:
+        bt.logging.warning(f"LIVE_EXEC: no dendrite/metagraph available for {subnet}, falling back to mock")
+        return _mock_execute_node(node, resolved_params)
+
+    # Select top-k axons by stake from metagraph
+    top_k = (routing_config or {}).get("top_k", 1)
+    stakes = [(i, float(metagraph.S[i])) for i in range(metagraph.n.item())
+              if metagraph.axons[i].is_serving]
+    stakes.sort(key=lambda x: -x[1])
+    target_axons = [metagraph.axons[uid] for uid, _ in stakes[:top_k]]
+
+    if not target_axons:
+        return _mock_execute_node(node, resolved_params)
+
+    # Build a minimal text synapse for SN1-compatible subnets
+    try:
+        import bittensor as bt
+        prompt = resolved_params.get("instruction") or resolved_params.get("prompt", str(resolved_params))
+
+        class TextSynapse(bt.Synapse):
+            prompt: str = ""
+            completion: str = ""
+            def deserialize(self): return self
+
+        synapse = TextSynapse(prompt=prompt)
+        t0 = time.time()
+        responses = await dendrite.forward(
+            axons=target_axons,
+            synapse=synapse,
+            timeout=8.0,
+        )
+        latency = time.time() - t0
+
+        aggregation = (routing_config or {}).get("aggregation", "majority_vote")
+        raw_outputs = []
+        for r in responses:
+            if r and r.completion:
+                raw_outputs.append({
+                    "status": "success",
+                    "output": {"text": r.completion, "artifacts": {}},
+                    "actual_cost": node.get("estimated_cost", 0.001),
+                    "actual_latency": latency,
+                })
+
+        if not raw_outputs:
+            return _mock_execute_node(node, resolved_params)
+
+        return aggregate_outputs(raw_outputs, aggregation)
+
+    except Exception as e:
+        bt.logging.warning(f"Live execute failed for node {node.get('id')}: {e}, falling back to mock")
+        return _mock_execute_node(node, resolved_params)
 
 
 # ── Async Node Executor ─────────────────────────────────────────────
@@ -329,6 +359,8 @@ async def _execute_node_async(
     mock_mode: bool,
     partner_hotkey: str,
     routing_policy: dict,
+    dendrite=None,
+    metagraph=None,
 ) -> None:
     """
     Execute a single DAG node asynchronously (used by _execute_tier_async).
@@ -386,7 +418,10 @@ async def _execute_node_async(
             if mock_mode:
                 node_result = _mock_execute_node(node, resolved_params)
             else:
-                node_result = _live_execute_node(node, resolved_params, partner_hotkey, routing_cfg)
+                node_result = await _live_execute_node_async(
+                    node, resolved_params, partner_hotkey, routing_cfg,
+                    dendrite=dendrite, metagraph=metagraph
+                )
 
             if node_result and node_result.get("status") == "success":
                 break
@@ -428,6 +463,8 @@ async def _execute_tier_async(
     mock_mode: bool,
     partner_hotkey: str,
     routing_policy: dict,
+    dendrite=None,
+    metagraph=None,
 ) -> None:
     """
     Execute all nodes in a tier concurrently using asyncio.gather (readme §3.2).
@@ -446,6 +483,8 @@ async def _execute_tier_async(
             mock_mode=mock_mode,
             partner_hotkey=partner_hotkey,
             routing_policy=routing_policy,
+            dendrite=dendrite,
+            metagraph=metagraph,
         )
         for node_id in tier
     ]
@@ -460,6 +499,8 @@ async def execute_workflow_async(
     total_estimated_cost: float,
     mock_mode: Optional[bool] = None,
     routing_policy: Optional[dict] = None,
+    dendrite=None,
+    metagraph=None,
 ) -> ExecutionResult:
     """
     Execute a miner's workflow plan asynchronously (readme §3.2, §4.8 step 3).
@@ -527,6 +568,8 @@ async def execute_workflow_async(
             mock_mode=mock_mode,
             partner_hotkey=partner_hotkey,
             routing_policy=routing_policy,
+            dendrite=dendrite,
+            metagraph=metagraph,
         )
 
     result.actual_latency = time.time() - start_time

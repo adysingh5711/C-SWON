@@ -24,6 +24,7 @@ to miners and workflow plans back. Defined per readme §3.2b.
 
 import bittensor as bt
 from typing import Optional
+from pydantic import Field
 
 
 class WorkflowSynapse(bt.Synapse):
@@ -40,9 +41,9 @@ class WorkflowSynapse(bt.Synapse):
     task_id:          str  = ""
     task_type:        str  = ""
     description:      str  = ""
-    quality_criteria: dict = {}
-    constraints:      dict = {}    # max_budget_tao, max_latency_seconds, allowed_subnets
-    available_tools:  dict = {}    # per-subnet cost/latency hints
+    quality_criteria: dict = Field(default_factory=dict)
+    constraints:      dict = Field(default_factory=dict)    # max_budget_tao, max_latency_seconds, allowed_subnets
+    available_tools:  dict = Field(default_factory=dict)    # per-subnet cost/latency hints
     send_block:       int  = 0     # stamped by query_loop before dispatch
 
     # ── Miner-populated fields (returned to validator) ───────────────

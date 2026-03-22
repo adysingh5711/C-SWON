@@ -25,6 +25,8 @@ Run: python neurons/validator.py --netuid <netuid> --wallet.name <name> --subten
 """
 
 import time
+import sys
+import signal
 
 import bittensor as bt
 
@@ -70,6 +72,14 @@ class Validator(BaseValidatorNeuron):
 # Entry point
 if __name__ == "__main__":
     with Validator() as validator:
+        def sig_handler(signum, frame):
+            bt.logging.info(f"Received signal {signum}, saving state and exiting...")
+            validator.save_state()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGTERM, sig_handler)
+
         while True:
             bt.logging.info(
                 f"C-SWON Validator running... block={validator.block}"

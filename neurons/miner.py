@@ -109,167 +109,109 @@ class Miner(BaseMinerNeuron):
         return synapse
 
     def _design_workflow(self, synapse: WorkflowSynapse, enriched_tools: dict = None) -> dict:
-        """
-        Design a workflow DAG based on task type and enriched tool profiles.
-
-        This is the core miner intelligence — a simple heuristic planner
-        that selects subnets based on task requirements and builds sequential
-        or parallel DAGs.
-        """
-        available_tools = enriched_tools if enriched_tools is not None else (synapse.available_tools or {})
+        available_tools = enriched_tools or synapse.available_tools or {}
         constraints = synapse.constraints or {}
-        allowed_subnets = constraints.get("allowed_subnets", list(available_tools.keys()))
-        task_type = synapse.task_type
+        allowed_subnets = set(constraints.get("allowed_subnets", list(available_tools.keys())))
+        desc = synapse.description.lower()
 
-        nodes = []
-        edges = []
-        error_handling = {}
+        # Decompose description into capability requirements
+        required_caps = self._infer_required_capabilities(desc)
 
-        if task_type in ("code_generation_pipeline", "code"):
-            nodes, edges, error_handling = self._code_pipeline(
-                synapse.description, available_tools, allowed_subnets
-            )
-        elif task_type in ("rag", "rag_pipeline"):
-            nodes, edges, error_handling = self._rag_pipeline(
-                synapse.description, available_tools, allowed_subnets
-            )
-        elif task_type in ("agent", "agent_task"):
-            nodes, edges, error_handling = self._agent_pipeline(
-                synapse.description, available_tools, allowed_subnets
-            )
-        elif task_type in ("data_transform", "data_transform_pipeline"):
-            nodes, edges, error_handling = self._data_transform_pipeline(
-                synapse.description, available_tools, allowed_subnets
-            )
-        else:
-            # Generic fallback: single text generation step
-            nodes, edges, error_handling = self._generic_pipeline(
-                synapse.description, available_tools, allowed_subnets
-            )
+        nodes, edges, error_handling = [], [], {}
+        prev_id = None
 
-        return {
-            "nodes": nodes,
-            "edges": edges,
-            "error_handling": error_handling,
+        for i, cap in enumerate(required_caps):
+            node_id = f"step_{i+1}"
+            subnet = self._pick_subnet_by_capability(available_tools, allowed_subnets, cap)
+            if not subnet:
+                continue
+            info = available_tools.get(subnet, {})
+            node = {
+                "id": node_id,
+                "subnet": subnet,
+                "action": cap,
+                "params": self._build_params(cap, desc, prev_id),
+                "estimated_cost": info.get("avg_cost", 0.001),
+                "estimated_latency": info.get("avg_latency", 0.5),
+            }
+            nodes.append(node)
+            if prev_id:
+                edges.append({"from": prev_id, "to": node_id})
+            error_handling[node_id] = {"retry_count": 1 if i == 0 else 0, "timeout_seconds": 5.0}
+            prev_id = node_id
+
+        if not nodes:
+            gnodes, gedges, gerr = self._generic_pipeline(synapse.description, available_tools, list(allowed_subnets))
+            return {"nodes": gnodes, "edges": gedges, "error_handling": gerr}
+
+        return {"nodes": nodes, "edges": edges, "error_handling": error_handling}
+
+    def _infer_required_capabilities(self, desc: str) -> list:
+        """
+        Extract ordered capability chain from the task description.
+        Returns a list of action strings that form the DAG nodes.
+        """
+        caps = []
+        # Retrieval signals
+        if any(w in desc for w in ["retrieve", "search", "fetch", "find documents", "lookup"]):
+            caps.append("retrieve_context")
+        # Code signals
+        if any(w in desc for w in ["code", "implement", "function", "class", "script", "program"]):
+            caps.append("generate_code")
+            if any(w in desc for w in ["test", "coverage", "unit test"]):
+                caps.append("generate_tests")
+            if any(w in desc for w in ["review", "lint", "style", "quality"]):
+                caps.append("review_code")
+        # Transform signals
+        if any(w in desc for w in ["transform", "convert", "parse", "extract", "format", "schema"]):
+            caps.append("transform_data")
+        # Reasoning / generation signals (always add if nothing else matched)
+        if any(w in desc for w in ["summarize", "answer", "explain", "generate", "write", "describe"]) or not caps:
+            caps.append("generate_answer")
+        # Fact-check signals
+        if any(w in desc for w in ["verify", "fact", "check", "validate", "ground truth"]):
+            caps.append("verify_facts")
+        return caps if caps else ["generate_answer"]
+
+    def _build_params(self, action: str, desc: str, prev_id) -> dict:
+        base = {"instruction": desc}
+        if prev_id:
+            base["input"] = f"${{{prev_id}.output.text}}"
+        if action == "generate_code":
+            base["max_tokens"] = 2000
+        elif action == "generate_answer":
+            base["max_tokens"] = 1000
+        return base
+
+    def _pick_subnet_by_capability(self, tools: dict, allowed: set, action: str) -> str:
+        """
+        Map action → preferred subnet type tags, then rank candidates by
+        (avg_cost, avg_latency) from SubnetProfiler history.
+        """
+        action_type_map = {
+            "generate_code":    ["code_generation", "text_generation", "inference"],
+            "generate_tests":   ["code_testing", "testing", "text_generation"],
+            "review_code":      ["code_review", "text_generation"],
+            "retrieve_context": ["retrieval", "search", "text_generation"],
+            "transform_data":   ["data_processing", "text_generation", "inference"],
+            "generate_answer":  ["text_generation", "inference"],
+            "verify_facts":     ["fact_checking", "text_generation"],
+            "plan_and_execute": ["agent", "text_generation", "inference"],
         }
-
-    def _code_pipeline(self, description, tools, allowed):
-        """Code generation pipeline: generate → review → test (readme §3.3 example)."""
-        nodes = []
-        edges = []
-        error_handling = {}
-
-        # Step 1: Code generation
-        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "code_generation"])
-        if gen_subnet:
-            cost_info = tools.get(gen_subnet, {})
-            nodes.append({
-                "id": "step_1", "subnet": gen_subnet, "action": "generate_code",
-                "params": {"prompt": description, "max_tokens": 2000},
-                "estimated_cost": cost_info.get("avg_cost", 0.001),
-                "estimated_latency": cost_info.get("avg_latency", 0.5),
-            })
-
-        # Step 2: Code review
-        review_subnet = self._pick_subnet(tools, allowed, ["code_review"])
-        if review_subnet and nodes:
-            cost_info = tools.get(review_subnet, {})
-            nodes.append({
-                "id": "step_2", "subnet": review_subnet, "action": "review_code",
-                "params": {
-                    "code_input": "${step_1.output.text}",
-                    "review_criteria": ["security", "style", "correctness"],
-                },
-                "estimated_cost": cost_info.get("avg_cost", 0.003),
-                "estimated_latency": cost_info.get("avg_latency", 1.2),
-            })
-            edges.append({"from": "step_1", "to": "step_2"})
-            error_handling["step_1"] = {"retry_count": 2}
-            error_handling["step_2"] = {"retry_count": 1, "timeout_seconds": 3.0}
-
-        # Step 3: Testing
-        test_subnet = self._pick_subnet(tools, allowed, ["code_testing", "testing"])
-        if test_subnet and len(nodes) >= 2:
-            cost_info = tools.get(test_subnet, {})
-            nodes.append({
-                "id": "step_3", "subnet": test_subnet, "action": "generate_tests",
-                "params": {
-                    "code_input": "${step_2.output.artifacts.code}",
-                    "coverage_target": 0.85,
-                },
-                "estimated_cost": cost_info.get("avg_cost", 0.002),
-                "estimated_latency": cost_info.get("avg_latency", 2.0),
-            })
-            edges.append({"from": "step_2", "to": "step_3"})
-
-        return nodes, edges, error_handling
-
-    def _rag_pipeline(self, description, tools, allowed):
-        """RAG pipeline: retrieve → generate → fact-check."""
-        nodes = []
-        edges = []
-        error_handling = {}
-
-        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference"])
-        if gen_subnet:
-            cost_info = tools.get(gen_subnet, {})
-            nodes.append({
-                "id": "step_1", "subnet": gen_subnet, "action": "generate_answer",
-                "params": {"prompt": description, "max_tokens": 1000},
-                "estimated_cost": cost_info.get("avg_cost", 0.001),
-                "estimated_latency": cost_info.get("avg_latency", 0.5),
-            })
-            error_handling["step_1"] = {"retry_count": 1}
-
-        fact_subnet = self._pick_subnet(tools, allowed, ["fact_checking"])
-        if fact_subnet and nodes:
-            cost_info = tools.get(fact_subnet, {})
-            nodes.append({
-                "id": "step_2", "subnet": fact_subnet, "action": "verify_facts",
-                "params": {"text_input": "${step_1.output.text}"},
-                "estimated_cost": cost_info.get("avg_cost", 0.0015),
-                "estimated_latency": cost_info.get("avg_latency", 0.8),
-            })
-            edges.append({"from": "step_1", "to": "step_2"})
-
-        return nodes, edges, error_handling
-
-    def _agent_pipeline(self, description, tools, allowed):
-        """Agent task: plan → execute → verify."""
-        nodes = []
-        edges = []
-        error_handling = {}
-
-        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "agent"])
-        if gen_subnet:
-            cost_info = tools.get(gen_subnet, {})
-            nodes.append({
-                "id": "step_1", "subnet": gen_subnet, "action": "plan_and_execute",
-                "params": {"task_description": description},
-                "estimated_cost": cost_info.get("avg_cost", 0.002),
-                "estimated_latency": cost_info.get("avg_latency", 1.0),
-            })
-            error_handling["step_1"] = {"retry_count": 2}
-
-        return nodes, edges, error_handling
-
-    def _data_transform_pipeline(self, description, tools, allowed):
-        """Data transform: process → validate."""
-        nodes = []
-        edges = []
-        error_handling = {}
-
-        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "data_processing"])
-        if gen_subnet:
-            cost_info = tools.get(gen_subnet, {})
-            nodes.append({
-                "id": "step_1", "subnet": gen_subnet, "action": "transform_data",
-                "params": {"instruction": description},
-                "estimated_cost": cost_info.get("avg_cost", 0.001),
-                "estimated_latency": cost_info.get("avg_latency", 0.5),
-            })
-
-        return nodes, edges, error_handling
+        preferred = action_type_map.get(action, ["text_generation", "inference"])
+        candidates = [
+            (sid, tools[sid].get("avg_cost", 999), tools[sid].get("avg_latency", 999))
+            for sid in allowed if sid in tools and tools[sid].get("type") in preferred
+        ]
+        if not candidates:
+            candidates = [
+                (sid, tools[sid].get("avg_cost", 999), tools[sid].get("avg_latency", 999))
+                for sid in allowed if sid in tools
+            ]
+        if not candidates:
+            return list(tools.keys())[0] if tools else None
+        candidates.sort(key=lambda x: (x[1], x[2]))
+        return candidates[0][0]
 
     def _generic_pipeline(self, description, tools, allowed):
         """Fallback single-step pipeline."""
@@ -277,7 +219,7 @@ class Miner(BaseMinerNeuron):
         edges = []
         error_handling = {}
 
-        subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference"])
+        subnet = self._pick_subnet_by_capability(tools, set(allowed), "generate_answer")
         if subnet:
             cost_info = tools.get(subnet, {})
             nodes.append({
@@ -288,28 +230,6 @@ class Miner(BaseMinerNeuron):
             })
 
         return nodes, edges, error_handling
-
-    def _pick_subnet(self, tools, allowed, preferred_types, max_budget=None):
-        """Pick the best available subnet ranked by avg_cost then avg_latency (fix 2.2)."""
-        candidates = []
-        for subnet_id, info in tools.items():
-            if subnet_id in allowed and info.get("type") in preferred_types:
-                candidates.append((
-                    subnet_id,
-                    info.get("avg_cost", 999),
-                    info.get("avg_latency", 999),
-                ))
-        if not candidates:
-            # Fallback: any allowed subnet regardless of type
-            candidates = [
-                (s, tools[s].get("avg_cost", 999), tools[s].get("avg_latency", 999))
-                for s in allowed if s in tools
-            ]
-        if not candidates:
-            return list(tools.keys())[0] if tools else None
-        # Sort by cost (primary), then latency (secondary)
-        candidates.sort(key=lambda x: (x[1], x[2]))
-        return candidates[0][0]
 
     def _estimate_total_cost(self, workflow_plan):
         """Sum estimated costs across all nodes."""

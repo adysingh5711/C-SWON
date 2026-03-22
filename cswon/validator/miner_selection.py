@@ -139,12 +139,12 @@ def select_miners_for_query(
         if metagraph.validator_permit[uid] and metagraph.S[uid] > 1024:
             continue
 
-        # Immunity check: real chain lookup when subtensor available (issue 2.4),
-        # fallback to UID-ordinal proxy (less accurate but no chain required).
-        if subtensor is not None and netuid is not None and current_block is not None:
-            is_immune = _is_within_immunity(uid, subtensor, netuid, current_block)
+        # Strict immunity check: real chain lookup only (issue 2.4/Fix 7).
+        # No more UID-ordinal proxy so miners can't squat on low UIDs.
+        if subtensor is None or netuid is None or current_block is None:
+            is_immune = False  # strict: no boost if chain unreachable
         else:
-            is_immune = uid < EARLY_MINER_LIMIT  # approximation
+            is_immune = _is_within_immunity(uid, subtensor, netuid, current_block)
         miner_stake = float(metagraph.S[uid])
         if miner_stake < min_stake_tao and not is_immune:
             bt.logging.trace(
@@ -155,8 +155,8 @@ def select_miners_for_query(
 
         candidates.append(uid)
 
-        # Early miner boost: 3× selection weight within 6-month window (issues 2.4, 3.7)
-        if early_boost_active and uid < EARLY_MINER_LIMIT:
+        # Early miner boost: 3× selection weight within 6-month window, strict immunity only
+        if early_boost_active and is_immune:
             weights.append(float(EARLY_MINER_BOOST_MULTIPLIER))
         else:
             weights.append(1.0)

@@ -79,6 +79,10 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
     expected_patterns = reference.get("expected_patterns", [])
 
     try:
+        import os
+        if os.environ.get("CSWON_MOCK_EXEC", "true").lower() == "true":
+            raise Exception("MOCK_EXEC=true, skipping actual tests")
+
         with tempfile.TemporaryDirectory() as tmpdir:
             code_file = pathlib.Path(tmpdir) / "solution.py"
             code_file.write_text(code_output)
@@ -88,25 +92,42 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
             if test_suite:
                 test_file = pathlib.Path(tmpdir) / "test_solution.py"
                 test_file.write_text(test_suite)
-                r = subprocess.run(
+                
+                p = subprocess.Popen(
                     ["python", "-m", "pytest", str(test_file), "-q", "--tb=no"],
-                    capture_output=True, text=True, timeout=15,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
                 )
-                test_score = _parse_pytest_fraction(r.stdout)
+                try:
+                    out, _ = p.communicate(timeout=15)
+                    # Add output limits (fix 8)
+                    if len(out) > 1024 * 1024:
+                        out = out[:1024 * 1024]
+                    test_score = _parse_pytest_fraction(out)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+                    p.communicate()
 
             # --- PEP8 linting score ---
             lint_score = 1.0
-            r2 = subprocess.run(
+            p2 = subprocess.Popen(
                 ["python", "-m", "pycodestyle", "--max-line-length=100", str(code_file)],
-                capture_output=True, text=True, timeout=10,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
-            violations = len([l for l in r2.stdout.strip().split("\n") if l.strip()])
-            lint_score = max(0.0, 1.0 - violations * 0.05)
+            try:
+                out2, _ = p2.communicate(timeout=10)
+                if len(out2) > 1024 * 1024:
+                    out2 = out2[:1024 * 1024]
+                violations = len([l for l in out2.strip().split("\n") if l.strip()])
+                lint_score = max(0.0, 1.0 - violations * 0.05)
+            except subprocess.TimeoutExpired:
+                p2.kill()
+                p2.communicate()
+                lint_score = 0.0
 
             return 0.7 * test_score + 0.3 * lint_score
 
-    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
-        bt.logging.warning("Code test runner unavailable; falling back to pattern match")
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+        bt.logging.warning(f"Code test runner unavailable ({e}); falling back to pattern match")
 
     # Fallback: expected_patterns keyword check
     if not expected_patterns:
@@ -386,18 +407,22 @@ class ScoreAggregator:
         self, miner_uids: List[int]
     ) -> Dict[int, float]:
         """
-        Get normalised weights with 15% per-miner cap (readme §4.8 step 6).
+        Get normalised weights using Z-score and 15% per-miner cap (readme §4.8 step 6, Fix 5).
         """
-        raw_weights = {}
-        for uid in miner_uids:
-            raw_weights[uid] = self.get_average_score(uid)
-
-        total = sum(raw_weights.values())
-        if total == 0:
+        import scipy.stats
+        
+        raw_weights = {uid: self.get_average_score(uid) for uid in miner_uids}
+        scores = np.array(list(raw_weights.values()))
+        
+        if np.max(scores) == 0:
             return {uid: 0.0 for uid in miner_uids}
 
-        # Normalise
-        normalised = {uid: w / total for uid, w in raw_weights.items()}
+        z_scores = scipy.stats.zscore(scores)
+        # Shift to positive space
+        shifted = z_scores - np.min(z_scores) + 1e-5
+        normalized_vals = shifted / np.sum(shifted)
+        
+        normalised = {uid: float(val) for uid, val in zip(raw_weights.keys(), normalized_vals)}
 
         # Apply 15% cap — redistribute excess
         capped = _apply_weight_cap(normalised, MAX_MINER_WEIGHT_FRACTION)
