@@ -1,173 +1,371 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 C-SWON Contributors
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
 # and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of
 # the Software.
 
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 # THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+"""
+C-SWON Miner Neuron — entry point.
+
+The miner receives task packages (WorkflowSynapse) from validators and returns
+workflow plans: DAGs of subnet calls with estimated cost, latency, and error handling.
+
+Run: python neurons/miner.py --netuid <netuid> --wallet.name <name> --subtensor.network <test|finney>
+"""
+
 import time
 import typing
+
 import bittensor as bt
 
-# Bittensor Miner Template:
-import template
-
-# import base miner class which takes care of most of the boilerplate
-from template.base.miner import BaseMinerNeuron
+import cswon
+from cswon.protocol import WorkflowSynapse
+from cswon.base.miner import BaseMinerNeuron
+from cswon.validator.config import SCORING_VERSION
 
 
 class Miner(BaseMinerNeuron):
     """
-    Your miner neuron class. You should use this class to define your miner's behavior. In particular, you should replace the forward function with your own logic. You may also want to override the blacklist and priority functions according to your needs.
+    C-SWON Miner: designs optimal workflow DAGs for multi-subnet task execution.
 
-    This class inherits from the BaseMinerNeuron class, which in turn inherits from BaseNeuron. The BaseNeuron class takes care of routine tasks such as setting up wallet, subtensor, metagraph, logging directory, parsing config, etc. You can override any of the methods in BaseNeuron if you need to customize the behavior.
-
-    This class provides reasonable default behavior for a miner such as blacklisting unrecognized hotkeys, prioritizing requests based on stake, and forwarding requests to the forward function. If you need to define custom
+    The miner's forward() receives a task package and returns a DataRef-compliant
+    workflow plan with nodes, edges, error handling, and cost/latency estimates.
     """
 
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
-
-        # TODO(developer): Anything specific to your use case you can do here
+        bt.logging.info("C-SWON Miner initialised")
 
     async def forward(
-        self, synapse: template.protocol.Dummy
-    ) -> template.protocol.Dummy:
+        self, synapse: WorkflowSynapse
+    ) -> WorkflowSynapse:
         """
-        Processes the incoming 'Dummy' synapse by performing a predefined operation on the input data.
-        This method should be replaced with actual logic relevant to the miner's purpose.
+        Process incoming task package and return a workflow plan (readme §3.3).
+
+        The miner analyses the task, available tools (subnets), and constraints
+        to design an optimal DAG of subnet calls.
 
         Args:
-            synapse (template.protocol.Dummy): The synapse object containing the 'dummy_input' data.
+            synapse: WorkflowSynapse with validator-populated task fields.
 
         Returns:
-            template.protocol.Dummy: The synapse object with the 'dummy_output' field set to twice the 'dummy_input' value.
-
-        The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
-        the miner's intended operation. This method demonstrates a basic transformation of input data.
+            WorkflowSynapse with miner-populated workflow plan fields.
         """
-        # TODO(developer): Replace with actual implementation logic.
-        synapse.dummy_output = synapse.dummy_input * 2
+        bt.logging.info(
+            f"Received task: {synapse.task_id} type={synapse.task_type}"
+        )
+
+        # Build workflow plan based on task type and available tools
+        workflow_plan = self._design_workflow(synapse)
+
+        # Populate miner response fields
+        synapse.miner_uid = self.uid
+        synapse.scoring_version = SCORING_VERSION
+        synapse.workflow_plan = workflow_plan
+        synapse.total_estimated_cost = self._estimate_total_cost(workflow_plan)
+        synapse.total_estimated_latency = self._estimate_total_latency(workflow_plan)
+        synapse.confidence = self._compute_confidence(synapse, workflow_plan)
+        synapse.reasoning = self._generate_reasoning(synapse, workflow_plan)
+
+        bt.logging.info(
+            f"Returning workflow plan for {synapse.task_id}: "
+            f"{len(workflow_plan.get('nodes', []))} nodes, "
+            f"est_cost={synapse.total_estimated_cost:.4f}τ"
+        )
+
         return synapse
 
+    def _design_workflow(self, synapse: WorkflowSynapse) -> dict:
+        """
+        Design a workflow DAG based on task type and available tools.
+
+        This is the core miner intelligence — a simple heuristic planner
+        that selects subnets based on task requirements and builds sequential
+        or parallel DAGs.
+        """
+        available_tools = synapse.available_tools or {}
+        constraints = synapse.constraints or {}
+        allowed_subnets = constraints.get("allowed_subnets", list(available_tools.keys()))
+        task_type = synapse.task_type
+
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        if task_type in ("code_generation_pipeline", "code"):
+            nodes, edges, error_handling = self._code_pipeline(
+                synapse.description, available_tools, allowed_subnets
+            )
+        elif task_type in ("rag", "rag_pipeline"):
+            nodes, edges, error_handling = self._rag_pipeline(
+                synapse.description, available_tools, allowed_subnets
+            )
+        elif task_type in ("agent", "agent_task"):
+            nodes, edges, error_handling = self._agent_pipeline(
+                synapse.description, available_tools, allowed_subnets
+            )
+        elif task_type in ("data_transform", "data_transform_pipeline"):
+            nodes, edges, error_handling = self._data_transform_pipeline(
+                synapse.description, available_tools, allowed_subnets
+            )
+        else:
+            # Generic fallback: single text generation step
+            nodes, edges, error_handling = self._generic_pipeline(
+                synapse.description, available_tools, allowed_subnets
+            )
+
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "error_handling": error_handling,
+        }
+
+    def _code_pipeline(self, description, tools, allowed):
+        """Code generation pipeline: generate → review → test (readme §3.3 example)."""
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        # Step 1: Code generation
+        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "code_generation"])
+        if gen_subnet:
+            cost_info = tools.get(gen_subnet, {})
+            nodes.append({
+                "id": "step_1", "subnet": gen_subnet, "action": "generate_code",
+                "params": {"prompt": description, "max_tokens": 2000},
+                "estimated_cost": cost_info.get("avg_cost", 0.001),
+                "estimated_latency": cost_info.get("avg_latency", 0.5),
+            })
+
+        # Step 2: Code review
+        review_subnet = self._pick_subnet(tools, allowed, ["code_review"])
+        if review_subnet and nodes:
+            cost_info = tools.get(review_subnet, {})
+            nodes.append({
+                "id": "step_2", "subnet": review_subnet, "action": "review_code",
+                "params": {
+                    "code_input": "${step_1.output.text}",
+                    "review_criteria": ["security", "style", "correctness"],
+                },
+                "estimated_cost": cost_info.get("avg_cost", 0.003),
+                "estimated_latency": cost_info.get("avg_latency", 1.2),
+            })
+            edges.append({"from": "step_1", "to": "step_2"})
+            error_handling["step_1"] = {"retry_count": 2}
+            error_handling["step_2"] = {"retry_count": 1, "timeout_seconds": 3.0}
+
+        # Step 3: Testing
+        test_subnet = self._pick_subnet(tools, allowed, ["code_testing", "testing"])
+        if test_subnet and len(nodes) >= 2:
+            cost_info = tools.get(test_subnet, {})
+            nodes.append({
+                "id": "step_3", "subnet": test_subnet, "action": "generate_tests",
+                "params": {
+                    "code_input": "${step_2.output.artifacts.code}",
+                    "coverage_target": 0.85,
+                },
+                "estimated_cost": cost_info.get("avg_cost", 0.002),
+                "estimated_latency": cost_info.get("avg_latency", 2.0),
+            })
+            edges.append({"from": "step_2", "to": "step_3"})
+
+        return nodes, edges, error_handling
+
+    def _rag_pipeline(self, description, tools, allowed):
+        """RAG pipeline: retrieve → generate → fact-check."""
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference"])
+        if gen_subnet:
+            cost_info = tools.get(gen_subnet, {})
+            nodes.append({
+                "id": "step_1", "subnet": gen_subnet, "action": "generate_answer",
+                "params": {"prompt": description, "max_tokens": 1000},
+                "estimated_cost": cost_info.get("avg_cost", 0.001),
+                "estimated_latency": cost_info.get("avg_latency", 0.5),
+            })
+            error_handling["step_1"] = {"retry_count": 1}
+
+        fact_subnet = self._pick_subnet(tools, allowed, ["fact_checking"])
+        if fact_subnet and nodes:
+            cost_info = tools.get(fact_subnet, {})
+            nodes.append({
+                "id": "step_2", "subnet": fact_subnet, "action": "verify_facts",
+                "params": {"text_input": "${step_1.output.text}"},
+                "estimated_cost": cost_info.get("avg_cost", 0.0015),
+                "estimated_latency": cost_info.get("avg_latency", 0.8),
+            })
+            edges.append({"from": "step_1", "to": "step_2"})
+
+        return nodes, edges, error_handling
+
+    def _agent_pipeline(self, description, tools, allowed):
+        """Agent task: plan → execute → verify."""
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "agent"])
+        if gen_subnet:
+            cost_info = tools.get(gen_subnet, {})
+            nodes.append({
+                "id": "step_1", "subnet": gen_subnet, "action": "plan_and_execute",
+                "params": {"task_description": description},
+                "estimated_cost": cost_info.get("avg_cost", 0.002),
+                "estimated_latency": cost_info.get("avg_latency", 1.0),
+            })
+            error_handling["step_1"] = {"retry_count": 2}
+
+        return nodes, edges, error_handling
+
+    def _data_transform_pipeline(self, description, tools, allowed):
+        """Data transform: process → validate."""
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        gen_subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference", "data_processing"])
+        if gen_subnet:
+            cost_info = tools.get(gen_subnet, {})
+            nodes.append({
+                "id": "step_1", "subnet": gen_subnet, "action": "transform_data",
+                "params": {"instruction": description},
+                "estimated_cost": cost_info.get("avg_cost", 0.001),
+                "estimated_latency": cost_info.get("avg_latency", 0.5),
+            })
+
+        return nodes, edges, error_handling
+
+    def _generic_pipeline(self, description, tools, allowed):
+        """Fallback single-step pipeline."""
+        nodes = []
+        edges = []
+        error_handling = {}
+
+        subnet = self._pick_subnet(tools, allowed, ["text_generation", "inference"])
+        if subnet:
+            cost_info = tools.get(subnet, {})
+            nodes.append({
+                "id": "step_1", "subnet": subnet, "action": "process",
+                "params": {"prompt": description},
+                "estimated_cost": cost_info.get("avg_cost", 0.001),
+                "estimated_latency": cost_info.get("avg_latency", 0.5),
+            })
+
+        return nodes, edges, error_handling
+
+    def _pick_subnet(self, tools, allowed, preferred_types):
+        """Pick the best available subnet for the given task type."""
+        for subnet_id, info in tools.items():
+            if subnet_id in allowed and info.get("type") in preferred_types:
+                return subnet_id
+        # Fallback: pick first allowed subnet
+        for subnet_id in allowed:
+            if subnet_id in tools:
+                return subnet_id
+        return list(tools.keys())[0] if tools else None
+
+    def _estimate_total_cost(self, workflow_plan):
+        """Sum estimated costs across all nodes."""
+        return sum(
+            n.get("estimated_cost", 0.0) for n in workflow_plan.get("nodes", [])
+        )
+
+    def _estimate_total_latency(self, workflow_plan):
+        """Sum estimated latencies (conservative sequential estimate)."""
+        return sum(
+            n.get("estimated_latency", 0.0) for n in workflow_plan.get("nodes", [])
+        )
+
+    def _compute_confidence(self, synapse, plan):
+        """Compute a confidence score based on plan quality."""
+        nodes = plan.get("nodes", [])
+        if not nodes:
+            return 0.1
+
+        # Higher confidence if more nodes cover the task
+        coverage = min(1.0, len(nodes) / 3)  # 3 nodes is ideal
+        # Higher confidence if costs are within budget
+        total_cost = self._estimate_total_cost(plan)
+        max_budget = synapse.constraints.get("max_budget_tao", 1.0)
+        cost_ratio = 1.0 - min(1.0, total_cost / max_budget) if max_budget > 0 else 0.5
+
+        return round(0.5 * coverage + 0.5 * cost_ratio, 2)
+
+    def _generate_reasoning(self, synapse, plan):
+        """Generate a brief reasoning explanation."""
+        nodes = plan.get("nodes", [])
+        if not nodes:
+            return "No viable workflow found for the given constraints."
+
+        steps = " → ".join(n.get("action", "?") for n in nodes)
+        return f"Sequential pipeline: {steps}. Selected based on cost/latency profile."
+
     async def blacklist(
-        self, synapse: template.protocol.Dummy
+        self, synapse: WorkflowSynapse
     ) -> typing.Tuple[bool, str]:
         """
-        Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
-        define the logic for blacklisting requests based on your needs and desired security parameters.
-
-        Blacklist runs before the synapse data has been deserialized (i.e. before synapse.data is available).
-        The synapse is instead contracted via the headers of the request. It is important to blacklist
-        requests before they are deserialized to avoid wasting resources on requests that will be ignored.
-
-        Args:
-            synapse (template.protocol.Dummy): A synapse object constructed from the headers of the incoming request.
-
-        Returns:
-            Tuple[bool, str]: A tuple containing a boolean indicating whether the synapse's hotkey is blacklisted,
-                            and a string providing the reason for the decision.
-
-        This function is a security measure to prevent resource wastage on undesired requests. It should be enhanced
-        to include checks against the metagraph for entity registration, validator status, and sufficient stake
-        before deserialization of synapse data to minimize processing overhead.
-
-        Example blacklist logic:
-        - Reject if the hotkey is not a registered entity within the metagraph.
-        - Consider blacklisting entities that are not validators or have insufficient stake.
-
-        In practice it would be wise to blacklist requests from entities that are not validators, or do not have
-        enough stake. This can be checked via metagraph.S and metagraph.validator_permit. You can always attain
-        the uid of the sender via a metagraph.hotkeys.index( synapse.dendrite.hotkey ) call.
-
-        Otherwise, allow the request to be processed further.
+        Blacklist non-registered or non-validator entities.
+        Only validators should query miners (readme §3.3).
         """
-
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning(
-                "Received a request without a dendrite or hotkey."
-            )
+            bt.logging.warning("Request without dendrite or hotkey")
             return True, "Missing dendrite or hotkey"
 
-        # TODO(developer): Define how miners should blacklist requests.
-        uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
-        if (
-            not self.config.blacklist.allow_non_registered
-            and synapse.dendrite.hotkey not in self.metagraph.hotkeys
-        ):
-            # Ignore requests from un-registered entities.
-            bt.logging.trace(
-                f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
-            )
-            return True, "Unrecognized hotkey"
+        # Check if the requester is registered
+        if synapse.dendrite.hotkey not in self.metagraph.hotkeys:
+            if not self.config.blacklist.allow_non_registered:
+                bt.logging.trace(
+                    f"Blacklisting unregistered hotkey {synapse.dendrite.hotkey}"
+                )
+                return True, "Unrecognized hotkey"
 
+        # Optionally enforce validator permit
         if self.config.blacklist.force_validator_permit:
-            # If the config is set to force validator permit, then we should only allow requests from validators.
+            uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
             if not self.metagraph.validator_permit[uid]:
                 bt.logging.warning(
-                    f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
+                    f"Blacklisting non-validator hotkey {synapse.dendrite.hotkey}"
                 )
                 return True, "Non-validator hotkey"
 
         bt.logging.trace(
-            f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
+            f"Accepting request from {synapse.dendrite.hotkey}"
         )
-        return False, "Hotkey recognized!"
+        return False, "Hotkey recognized"
 
-    async def priority(self, synapse: template.protocol.Dummy) -> float:
-        """
-        The priority function determines the order in which requests are handled. More valuable or higher-priority
-        requests are processed before others. You should design your own priority mechanism with care.
-
-        This implementation assigns priority to incoming requests based on the calling entity's stake in the metagraph.
-
-        Args:
-            synapse (template.protocol.Dummy): The synapse object that contains metadata about the incoming request.
-
-        Returns:
-            float: A priority score derived from the stake of the calling entity.
-
-        Miners may receive messages from multiple entities at once. This function determines which request should be
-        processed first. Higher values indicate that the request should be processed first. Lower values indicate
-        that the request should be processed later.
-
-        Example priority logic:
-        - A higher stake results in a higher priority value.
-        """
+    async def priority(self, synapse: WorkflowSynapse) -> float:
+        """Priority based on stake — higher stake validators get priority."""
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning(
-                "Received a request without a dendrite or hotkey."
-            )
             return 0.0
 
-        # TODO(developer): Define how miners should prioritize requests.
-        caller_uid = self.metagraph.hotkeys.index(
-            synapse.dendrite.hotkey
-        )  # Get the caller index.
-        priority = float(
-            self.metagraph.S[caller_uid]
-        )  # Return the stake as the priority.
-        bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}"
-        )
-        return priority
+        try:
+            caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
+            priority = float(self.metagraph.S[caller_uid])
+            bt.logging.trace(
+                f"Priority for {synapse.dendrite.hotkey}: {priority}"
+            )
+            return priority
+        except ValueError:
+            return 0.0
 
 
-# This is the main function, which runs the miner.
+# Entry point
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
-            bt.logging.info(f"Miner running... {time.time()}")
+            bt.logging.info(f"C-SWON Miner running... block={miner.block}")
             time.sleep(5)

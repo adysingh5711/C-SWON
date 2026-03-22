@@ -163,3 +163,7 @@ testing/
 
 # Editors
 .vscode/settings.json
+
+#CSWON
+implementation_plan.md
+task.md

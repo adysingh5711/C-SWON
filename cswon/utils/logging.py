@@ -1,35 +1,50 @@
-import os
+"""
+C-SWON Logging Utilities
+
+Provides the setup_events_logger function used by the config module
+for structured event logging.
+"""
+
 import logging
 from logging.handlers import RotatingFileHandler
-
-EVENTS_LEVEL_NUM = 38
-DEFAULT_LOG_BACKUP_COUNT = 10
+import os
 
 
-def setup_events_logger(full_path, events_retention_size):
-    logging.addLevelName(EVENTS_LEVEL_NUM, "EVENT")
+def setup_events_logger(full_path: str, events_retention_size: int) -> logging.Logger:
+    """
+    Set up a dedicated events logger with rotating file handler.
 
-    logger = logging.getLogger("event")
-    logger.setLevel(EVENTS_LEVEL_NUM)
+    Args:
+        full_path: Directory path where event log files will be written.
+        events_retention_size: Maximum size of each log file in bytes before rotation.
 
-    def event(self, message, *args, **kws):
-        if self.isEnabledFor(EVENTS_LEVEL_NUM):
-            self._log(EVENTS_LEVEL_NUM, message, args, **kws)
+    Returns:
+        A configured Logger instance for events.
+    """
+    logger = logging.getLogger("events")
+    logger.setLevel(logging.DEBUG)
 
-    logging.Logger.event = event
+    log_file = os.path.join(full_path, "events.log")
+
+    # Ensure the directory exists
+    os.makedirs(full_path, exist_ok=True)
+
+    # Rotating file handler with size-based rotation
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=int(events_retention_size) if events_retention_size else 2 * 1024 * 1024 * 1024,
+        backupCount=3,
+    )
+    handler.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s",
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    handler.setFormatter(formatter)
 
-    file_handler = RotatingFileHandler(
-        os.path.join(full_path, "events.log"),
-        maxBytes=events_retention_size,
-        backupCount=DEFAULT_LOG_BACKUP_COUNT,
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(EVENTS_LEVEL_NUM)
-    logger.addHandler(file_handler)
+    # Avoid adding duplicate handlers
+    if not logger.handlers:
+        logger.addHandler(handler)
 
     return logger

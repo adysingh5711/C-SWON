@@ -1,42 +1,44 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 C-SWON Contributors
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
 # and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of
 # the Software.
 
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 # THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+"""
+C-SWON Validator Neuron — entry point.
+
+The validator selects benchmark tasks, queries miners for workflow plans,
+executes them in a sandbox, scores results, and submits weights.
+
+Run: python neurons/validator.py --netuid <netuid> --wallet.name <name> --subtensor.network <test|finney>
+"""
 
 import time
 
-# Bittensor
 import bittensor as bt
 
-# import base validator class which takes care of most of the boilerplate
-from template.base.validator import BaseValidatorNeuron
-
-# Bittensor Validator Template:
-from template.validator import forward
+from cswon.base.validator import BaseValidatorNeuron
+from cswon.validator import forward
+from cswon.validator.reward import ScoreAggregator
 
 
 class Validator(BaseValidatorNeuron):
     """
-    Your validator neuron class. You should use this class to define your validator's behavior. In particular, you should replace the forward function with your own logic.
+    C-SWON Validator: evaluates miner workflow plans using the six-stage pipeline.
 
-    This class inherits from the BaseValidatorNeuron class, which in turn inherits from BaseNeuron. The BaseNeuron class takes care of routine tasks such as setting up wallet, subtensor, metagraph, logging directory, parsing config, etc. You can override any of the methods in BaseNeuron if you need to customize the behavior.
-
-    This class provides reasonable default behavior for a validator such as keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
+    This class inherits from BaseValidatorNeuron which handles registration,
+    metagraph sync, weight setting, and other boilerplate.
     """
 
     def __init__(self, config=None):
@@ -45,24 +47,30 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
-        # TODO(developer): Anything specific to your use case you can do here
+        # Initialise the score aggregator (rolling 100-task window)
+        self.score_aggregator = ScoreAggregator()
+
+        bt.logging.info("C-SWON Validator initialised")
 
     async def forward(self):
         """
-        Validator forward pass. Consists of:
-        - Generating the query
-        - Querying the miners
-        - Getting the responses
-        - Rewarding the miners
-        - Updating the scores
+        Validator forward pass — six-stage evaluation pipeline (readme §4.8).
+
+        1. Deterministic task selection (VRF-keyed)
+        2. Miner workflow collection (async query)
+        3. Sandboxed execution
+        4. Output quality evaluation (deterministic, no LLM judge)
+        5. Composite scoring (four-dimension formula)
+        6. Rolling window update + weight submission
         """
-        # TODO(developer): Rewrite this function based on your protocol definition.
         return await forward(self)
 
 
-# The main function parses the configuration and runs the validator.
+# Entry point
 if __name__ == "__main__":
     with Validator() as validator:
         while True:
-            bt.logging.info(f"Validator running... {time.time()}")
+            bt.logging.info(
+                f"C-SWON Validator running... block={validator.block}"
+            )
             time.sleep(5)

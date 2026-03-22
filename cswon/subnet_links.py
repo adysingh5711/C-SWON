@@ -88,4 +88,9 @@ SUBNET_LINKS = [
     },
     {"name": "sn36", "url": "https://github.com/HIP-Labs/HIP-Subnet/"},
     {"name": "sn37", "url": "https://github.com/macrocosm-os/finetuning/"},
+    # C-SWON subnet
+    {
+        "name": "cswon",
+        "url": "https://github.com/adysingh5711/C-SWON",
+    },
 ]

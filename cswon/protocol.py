@@ -1,76 +1,72 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 C-SWON Contributors
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
 # and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of
 # the Software.
 
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 # THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import typing
+"""
+C-SWON Protocol Definition
+
+WorkflowSynapse is the Bittensor synapse that carries task packages from validators
+to miners and workflow plans back. Defined per readme §3.2b.
+"""
+
 import bittensor as bt
+from typing import Optional
 
-# TODO(developer): Rewrite with your protocol definition.
 
-# This is the protocol for the dummy miner and validator.
-# It is a simple request-response protocol where the validator sends a request
-# to the miner, and the miner responds with a dummy response.
+class WorkflowSynapse(bt.Synapse):
+    """
+    Validator → Miner: carries the task package.
+    Miner → Validator: carries the workflow plan (populated by miner).
 
-# ---- miner ----
-# Example usage:
-#   def dummy( synapse: Dummy ) -> Dummy:
-#       synapse.dummy_output = synapse.dummy_input + 1
-#       return synapse
-#   axon = bt.axon().attach( dummy ).serve(netuid=...).start()
+    Validator-populated fields are set before dispatching via dendrite.forward().
+    Miner-populated fields (all Optional) are filled by the miner's forward() handler.
+    Any Optional field left as None by the miner is treated as an invalid response.
+    """
 
-# ---- validator ---
-# Example usage:
-#   dendrite = bt.dendrite()
-#   dummy_output = dendrite.query( Dummy( dummy_input = 1 ) )
-#   assert dummy_output == 2
+    # ── Validator-populated fields (sent to miner) ──────────────────
+    task_id:          str  = ""
+    task_type:        str  = ""
+    description:      str  = ""
+    quality_criteria: dict = {}
+    constraints:      dict = {}    # max_budget_tao, max_latency_seconds, allowed_subnets
+    available_tools:  dict = {}    # per-subnet cost/latency hints
+    send_block:       int  = 0     # stamped by query_loop before dispatch
+
+    # ── Miner-populated fields (returned to validator) ───────────────
+    miner_uid:               Optional[int]   = None
+    scoring_version:         Optional[str]   = None
+    workflow_plan:           Optional[dict]  = None   # nodes, edges, error_handling
+    total_estimated_cost:    Optional[float] = None
+    total_estimated_latency: Optional[float] = None
+    confidence:              Optional[float] = None
+    reasoning:               Optional[str]   = None
+
+    def deserialize(self) -> "WorkflowSynapse":
+        """Return self — the synapse is the container for all response data."""
+        return self
 
 
 class Dummy(bt.Synapse):
     """
-    A simple dummy protocol representation which uses bt.Synapse as its base.
-    This protocol helps in handling dummy request and response communication between
-    the miner and the validator.
-
-    Attributes:
-    - dummy_input: An integer value representing the input request sent by the validator.
-    - dummy_output: An optional integer value which, when filled, represents the response from the miner.
+    Legacy dummy protocol kept for backward-compatible mock tests.
+    Will be removed in v2.
     """
 
-    # Required request input, filled by sending dendrite caller.
     dummy_input: int
-
-    # Optional request output, filled by receiving axon.
-    dummy_output: typing.Optional[int] = None
+    dummy_output: Optional[int] = None
 
     def deserialize(self) -> int:
-        """
-        Deserialize the dummy output. This method retrieves the response from
-        the miner in the form of dummy_output, deserializes it and returns it
-        as the output of the dendrite.query() call.
-
-        Returns:
-        - int: The deserialized response, which in this case is the value of dummy_output.
-
-        Example:
-        Assuming a Dummy instance has a dummy_output value of 5:
-        >>> dummy_instance = Dummy(dummy_input=4)
-        >>> dummy_instance.dummy_output = 5
-        >>> dummy_instance.deserialize()
-        5
-        """
         return self.dummy_output

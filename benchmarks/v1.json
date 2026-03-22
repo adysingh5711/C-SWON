@@ -1,0 +1,158 @@
+[
+  {
+    "task_id": "t-0001",
+    "status": "active",
+    "quarantine_since_tempo": null,
+    "deprecation_reason": null,
+    "task_type": "code_generation_pipeline",
+    "description": "Generate a Python FastAPI endpoint for user authentication with JWT tokens, including unit tests",
+    "quality_criteria": {
+      "functional_correctness": true,
+      "test_coverage": ">80%",
+      "code_style": "PEP8"
+    },
+    "constraints": {
+      "max_budget_tao": 0.05,
+      "max_latency_seconds": 10.0,
+      "allowed_subnets": ["SN1", "SN62", "SN64", "SN45", "SN70"]
+    },
+    "available_tools": {
+      "SN1":  { "type": "text_generation", "avg_cost": 0.001,  "avg_latency": 0.5 },
+      "SN62": { "type": "code_review",     "avg_cost": 0.003,  "avg_latency": 1.2 },
+      "SN64": { "type": "inference",       "avg_cost": 0.0005, "avg_latency": 0.3 },
+      "SN45": { "type": "code_testing",    "avg_cost": 0.002,  "avg_latency": 2.0 },
+      "SN70": { "type": "fact_checking",   "avg_cost": 0.0015, "avg_latency": 0.8 }
+    },
+    "routing_policy": {
+      "default": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" },
+      "SN1":  { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "median_logit" },
+      "SN62": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" },
+      "SN45": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" }
+    },
+    "reference": {
+      "expected_patterns": ["@app.post", "jwt", "token", "password", "def test_"],
+      "reference_answer": null
+    }
+  },
+  {
+    "task_id": "t-0002",
+    "status": "active",
+    "quarantine_since_tempo": null,
+    "deprecation_reason": null,
+    "task_type": "rag",
+    "description": "Given a collection of technical documents about Bittensor subnet architecture, answer: What is the role of validators in the consensus mechanism?",
+    "quality_criteria": {
+      "factual_accuracy": true,
+      "relevance": true,
+      "completeness": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.03,
+      "max_latency_seconds": 8.0,
+      "allowed_subnets": ["SN1", "SN64", "SN70"]
+    },
+    "available_tools": {
+      "SN1":  { "type": "text_generation", "avg_cost": 0.001,  "avg_latency": 0.5 },
+      "SN64": { "type": "inference",       "avg_cost": 0.0005, "avg_latency": 0.3 },
+      "SN70": { "type": "fact_checking",   "avg_cost": 0.0015, "avg_latency": 0.8 }
+    },
+    "routing_policy": {
+      "default": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" },
+      "SN1": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "median_logit" }
+    },
+    "reference": {
+      "reference_answer": "Validators in Bittensor's consensus mechanism are responsible for evaluating miner outputs, scoring responses based on quality metrics, and submitting stake-weighted scores to the blockchain. They run the Yuma Consensus algorithm to determine emission distribution, maintaining network integrity through honest evaluation and weight submission each tempo."
+    }
+  },
+  {
+    "task_id": "t-0003",
+    "status": "active",
+    "quarantine_since_tempo": null,
+    "deprecation_reason": null,
+    "task_type": "agent",
+    "description": "Create a Python script that fetches the top 10 GitHub trending repositories, filters for Python projects, and outputs a JSON summary with name, stars, and description",
+    "quality_criteria": {
+      "functional_correctness": true,
+      "output_format": "json"
+    },
+    "constraints": {
+      "max_budget_tao": 0.04,
+      "max_latency_seconds": 15.0,
+      "allowed_subnets": ["SN1", "SN64"]
+    },
+    "available_tools": {
+      "SN1":  { "type": "text_generation", "avg_cost": 0.001,  "avg_latency": 0.5 },
+      "SN64": { "type": "inference",       "avg_cost": 0.0005, "avg_latency": 0.3 }
+    },
+    "routing_policy": {
+      "default": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" }
+    },
+    "reference": {
+      "goal_checklist": [
+        { "text": "fetches github trending", "required": true },
+        { "text": "filters python", "required": true },
+        { "text": "json output", "required": true },
+        { "text": "name", "required": true },
+        { "text": "stars", "required": true },
+        { "text": "description", "required": true }
+      ]
+    }
+  },
+  {
+    "task_id": "t-0004",
+    "status": "active",
+    "quarantine_since_tempo": null,
+    "deprecation_reason": null,
+    "task_type": "data_transform",
+    "description": "Convert the following CSV data to a JSON array with proper type inference: 'name,age,active\\nAlice,30,true\\nBob,25,false\\nCharlie,35,true'",
+    "quality_criteria": {
+      "schema_valid": true,
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 5.0,
+      "allowed_subnets": ["SN1", "SN64"]
+    },
+    "available_tools": {
+      "SN1":  { "type": "text_generation", "avg_cost": 0.001,  "avg_latency": 0.5 },
+      "SN64": { "type": "inference",       "avg_cost": 0.0005, "avg_latency": 0.3 }
+    },
+    "routing_policy": {
+      "default": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" }
+    },
+    "reference": {
+      "expected_output": "[{\"name\":\"Alice\",\"age\":30,\"active\":true},{\"name\":\"Bob\",\"age\":25,\"active\":false},{\"name\":\"Charlie\",\"age\":35,\"active\":true}]"
+    }
+  },
+  {
+    "task_id": "t-0005",
+    "status": "active",
+    "quarantine_since_tempo": null,
+    "deprecation_reason": null,
+    "task_type": "code_generation_pipeline",
+    "description": "Generate a Python function that implements binary search on a sorted list, with comprehensive unit tests covering edge cases",
+    "quality_criteria": {
+      "functional_correctness": true,
+      "test_coverage": ">90%",
+      "code_style": "PEP8"
+    },
+    "constraints": {
+      "max_budget_tao": 0.04,
+      "max_latency_seconds": 8.0,
+      "allowed_subnets": ["SN1", "SN62", "SN45"]
+    },
+    "available_tools": {
+      "SN1":  { "type": "text_generation", "avg_cost": 0.001,  "avg_latency": 0.5 },
+      "SN62": { "type": "code_review",     "avg_cost": 0.003,  "avg_latency": 1.2 },
+      "SN45": { "type": "code_testing",    "avg_cost": 0.002,  "avg_latency": 2.0 }
+    },
+    "routing_policy": {
+      "default": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "majority_vote" },
+      "SN1": { "miner_selection": "top_k_stake_weighted", "top_k": 3, "aggregation": "median_logit" }
+    },
+    "reference": {
+      "expected_patterns": ["def binary_search", "def test_", "assert", "sorted", "mid"]
+    }
+  }
+]

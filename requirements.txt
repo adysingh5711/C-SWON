@@ -1,3 +1,4 @@
+bittensor>=6.0
 starlette>=0.30.0
 pydantic>=2
 rich>=13
@@ -5,3 +6,5 @@ pytest>=8
 torch>=2
 numpy>=1
 setuptools>=68
+rouge-score>=0.1.2
+docker>=7.0
