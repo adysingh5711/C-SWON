@@ -60,8 +60,8 @@ flowchart TD
 
 ### 2.2 Scoring Formula (v1.0.0)
 
-> **Scoring version:** All validators must run `SCORING_VERSION = "1.0.0"`. </br>
-> [See Section 4.5 for the upgrade protocol]. </br>
+> **Scoring version:** All validators must run `SCORING_VERSION = "1.0.0"`. `</br>`
+> [See Section 4.5 for the upgrade protocol]. `</br>`
 
 Every workflow a miner submits is executed by validators. A composite score
 **S ∈ [0, 1]** is computed across four dimensions:
@@ -288,8 +288,8 @@ class WorkflowSynapse(bt.Synapse):
         return self
 ```
 
-**Validator reads** `response.miner_uid`, `response.workflow_plan`, etc. </br>
-**Validator writes** `task_id`, `task_type`, `description`, `constraints`, `available_tools`, `send_block` before calling `dendrite.forward()`. </br>
+**Validator reads** `response.miner_uid`, `response.workflow_plan`, etc. `</br>`
+**Validator writes** `task_id`, `task_type`, `description`, `constraints`, `available_tools`, `send_block` before calling `dendrite.forward()`. `</br>`
 The miner populates all `Optional` fields in its `forward()` handler and returns the synapse. Any `Optional` field left as `None` by the miner is treated as an invalid response and discarded.
 
 ---
@@ -790,34 +790,23 @@ flowchart TD
     end
 
     subgraph GW["C-SWON API Gateway (fee collection point)"]
-        G["get_optimal_workflow(task, constraints)
-execute_workflow(plan) · monitor_execution(workflow_id)"]
+        G["get_optimal_workflow(task, constraints)<br/>execute_workflow(plan) · monitor_execution(workflow_id)"]
     end
 
     subgraph SL["C-SWON Subnet Layer"]
-        V["Validators (5–20)
-· VRF task: hash(hotkey+block) % len(benchmarks)
-· Docker sandbox execution
-· ROUGE-L · test runner · checklist quality scoring
-· Immunity warm-up scale for new miners
-· set_weights() once per tempo (360 blocks)
-· Exec support claims if tasks_executed >= N_min (30)"]
-        M["Miners (30–100)
-· Receive task package
-· Design DataRef-compliant workflow DAG
-· Return executable plan with scoring_version
-· Serve via Bittensor axon"]
-        S["Subtensor — Blockchain Layer
-· Neuron registry · Weights · Alpha emissions · AMM pool"]
+        V["Validators (5–20)<br/>· VRF task: hash(hotkey+block) % len(benchmarks)<br/>· Docker sandbox execution<br/>· ROUGE-L · test runner · checklist quality scoring<br/>· Immunity warm-up scale for new miners<br/>· set_weights() once per tempo (360 blocks)<br/>· Exec support claims if tasks_executed >= N_min (30)"]
 
-        V -->|Task queries — 1 per block, deterministic| M
+        M["Miners (30–100)<br/>· Receive task package<br/>· Design DataRef-compliant workflow DAG<br/>· Return executable plan with scoring_version<br/>· Serve via Bittensor axon"]
+
+        S["Subtensor - Blockchain Layer<br/>· Neuron registry · Weights · Alpha emissions · AMM pool"]
+
+        V -->|Task queries per block deterministic| M
         M -->|Workflow plans| V
-        V -->|set_weights() once per tempo| S
+        V -->|set_weights once per tempo| S
     end
 
     subgraph ECO["Bittensor Subnet Ecosystem"]
-        E["SN1 (Text) · SN62 (Code Review) · SN64 (Inference)
-SN45 (Testing) · SN70 (Fact Check) · 100+ subnets"]
+        E["SN1 (Text) · SN62 (Code Review) · SN64 (Inference)<br/>SN45 (Testing) · SN70 (Fact Check) · 100+ subnets"]
     end
 
     APP --> GW
@@ -839,38 +828,57 @@ SN45 (Testing) · SN70 (Fact Check) · 100+ subnets"]
 ### 6.2 Validation Cycle Detail
 
 ```mermaid
-sequenceDiagram
-    participant V as Validator
-    participant M as Miner Pool
-    participant P as Partner Subnets (off-chain)
+flowchart TD
+    A[Seed Generation]
+    B[Task Selection]
+    C[Send Task Package to Miner]
+    D[Receive Workflow Plans]
+    E[Execute in Sandbox - Docker]
+    F[Off-chain Calls to Partner Subnets]
+    G[Collect Outputs]
+    H[Evaluate - Code / RAG / Agent]
+    I[Compute Score S]
+    J[Apply Warm-up Scaling]
+    K[Rolling Window Update]
+    L[set_weights per tempo]
+    M[Distribute Rewards]
 
-    Note over V: seed = hash(validator_hotkey + block)
-    Note over V: task = benchmarks[seed % len]
+    %% Connections
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M
 
-    V->>M: Task Package (validator-specific pseudorandom task)
-    M-->>V: Workflow Plans (DataRef-compliant, scoring_version included)
+    %% Styles
+    style A fill:#6d28d9,stroke:#a78bfa,color:#fff        %% Task Seed
+    style B fill:#4c1d95,stroke:#7c3aed,color:#fff        %% Task Selection
+    style C fill:#b45309,stroke:#fcd34d,color:#fff        %% Miner Interaction
+    style D fill:#1d4ed8,stroke:#93c5fd,color:#fff        %% Miner Interaction
+    style E fill:#166534,stroke:#4ade80,color:#fff        %% Execution / Docker
+    style F fill:#0c4a6e,stroke:#0ea5e9,color:#fff        %% Off-chain Calls
+    style G fill:#075985,stroke:#38bdf8,color:#fff        %% Outputs
+    style H fill:#1e3a5f,stroke:#3b82f6,color:#fff        %% Evaluation
+    style I fill:#14532d,stroke:#22c55e,color:#fff        %% Scoring
+    style J fill:#0f172a,stroke:#64748b,color:#fff        %% Warm-up / Scaling
+    style K fill:#0f172a,stroke:#64748b,color:#fff        %% Rolling Window
+    style L fill:#0f172a,stroke:#64748b,color:#fff        %% Weight Update
+    style M fill:#b45309,stroke:#fcd34d,color:#fff        %% Rewards
+```
 
-    Note over V: Sandboxed Docker execution
+---
 
-    V->>P: Off-chain calls via registered hotkey
-    P-->>V: Outputs (logged locally, no on-chain receipt)
+```mermaid
+flowchart TD
+    A[Seed Generation] --> B[Task Selection]
+    B --> C[Send Task Package]
+    C --> D[Receive Workflow Plans]
 
-    Note over V: Quality scoring (no LLM judge)
-    Note over V: Code -> test runner
-    Note over V: RAG -> ROUGE-L
-    Note over V: Agent -> checklist
+    %% Clickable tooltips / extra info
+    click A callback "hash(validator_hotkey + block)"
+    click B callback "benchmarks[seed % len]"
 
-    Note over V: S = 0.50 * success * completion_ratio
-    Note over V: + 0.25 * cost + 0.15 * latency + 0.10 * reliability
-
-    Note over V: Apply immunity warm-up scale if miner is new (< 20 tasks)
-
-    Note over V: Rolling 100-task equal-weight window update
-
-    Note over V: Once per tempo -> set_weights() with 15% cap per miner
-
-    Note over M: Alpha rewards via Yuma Consensus
-    Note over V: Alpha rewards (validator take + staker dividends)
+    %% Styles
+    style A fill:#6d28d9,stroke:#a78bfa,color:#fff
+    style B fill:#4c1d95,stroke:#7c3aed,color:#fff
+    style C fill:#b45309,stroke:#fcd34d,color:#fff
+    style D fill:#1d4ed8,stroke:#93c5fd,color:#fff
 ```
 
 ### 6.3 Risk Register
@@ -1223,10 +1231,10 @@ btcli subnet metagraph --netuid <netuid>
 > We turn 'which subnets to call and how' into a competitive intelligence market,
 > making Bittensor the world's first truly composable AI operating system."*
 
-> **GitHub:** [https://github.com/adysingh5711/C-SWON](https://github.com/adysingh5711/C-SWON) </br>
-> **Demo:** [https://youtu.be/X2RZts7AXX0](https://youtu.be/X2RZts7AXX0) </br>
-> **Hackathon Link:** [https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon](https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon) </br>
-> **Results:** [https://x.com/singhaditya5711/status/2030662024922071367?s=20](https://x.com/singhaditya5711/status/2030662024922071367?s=20) </br>
+> **GitHub:** [https://github.com/adysingh5711/C-SWON](https://github.com/adysingh5711/C-SWON) `</br>`
+> **Demo:** [https://youtu.be/X2RZts7AXX0](https://youtu.be/X2RZts7AXX0) `</br>`
+> **Hackathon Link:** [https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon](https://www.hackquest.io/hackathons/Bittensor-Subnet-Ideathon) `</br>`
+> **Results:** [https://x.com/singhaditya5711/status/2030662024922071367?s=20](https://x.com/singhaditya5711/status/2030662024922071367?s=20) `</br>`
 > **Whitepaper:** Upcoming
 
 *C-SWON: Cross-Subnet Workflow Orchestration Network - Making Bittensor Composable*
