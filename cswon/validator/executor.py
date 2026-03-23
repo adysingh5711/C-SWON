@@ -22,12 +22,16 @@ import copy
 import os
 import re
 import time
+import concurrent.futures
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import bittensor as bt
 
 from cswon.subnet_links import SUBNET_LINKS  # integrate subnet_links.py (issue 3.9)
+
+# Shared thread pool for backward-compat sync wrapper (fix 4)
+_SYNC_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 # ── DataRef Resolution ──────────────────────────────────────────────
@@ -606,17 +610,15 @@ def execute_workflow(
         loop = asyncio.get_event_loop()
         if loop.is_running():
             # We're inside an existing event loop (e.g. called from async forward):
-            # create a new loop in a thread to avoid nesting
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(
-                    asyncio.run,
-                    execute_workflow_async(
-                        workflow_plan, constraints, total_estimated_cost,
-                        mock_mode, routing_policy,
-                    ),
-                )
-                return future.result()
+            # create a new loop in a thread to avoid nesting using shared executor
+            future = _SYNC_EXECUTOR.submit(
+                asyncio.run,
+                execute_workflow_async(
+                    workflow_plan, constraints, total_estimated_cost,
+                    mock_mode, routing_policy,
+                ),
+            )
+            return future.result()
         else:
             return loop.run_until_complete(
                 execute_workflow_async(

@@ -53,21 +53,24 @@ class SubnetProfiler:
 
         self._last_refresh_block: int = -1
 
+import asyncio
+import concurrent.futures
+
+def _probe_axon_sync(ip: str, port: int) -> tuple:
+    """Blocking TCP probe — must only ever run inside a thread pool."""
+    import socket, time
+    t0 = time.time()
+    try:
+        with socket.create_connection((ip, port), timeout=2.0):
+            pass
+        return time.time() - t0, True
+    except Exception:
+        return time.time() - t0, False
+
     # ── Refresh ────────────────────────────────────────────────────────────
 
-    def refresh(self, metagraph: "bt.metagraph", current_block: int) -> None:
-        """
-        Refresh subnet profiles from the metagraph every 100 blocks (readme §3.6, fix 2.1).
-
-        Iterates serving axons in the metagraph and records a lightweight latency
-        probe observation for each. In v1 (testnet), a socket connect is used as
-        a proxy for round-trip latency. In v2, a real HealthSynapse dendrite
-        call will replace this.
-
-        Args:
-            metagraph: The current metagraph snapshot.
-            current_block: The current Bittensor block number.
-        """
+    async def refresh_async(self, metagraph: "bt.metagraph", current_block: int) -> None:
+        """Non-blocking async version of refresh() — use this from async contexts."""
         if current_block - self._last_refresh_block < 100:
             return  # Not yet time to refresh
 
@@ -78,27 +81,28 @@ class SubnetProfiler:
             f"Currently tracking {len(self._cost_history)} subnets."
         )
 
-        import socket
-        probed = 0
-        for uid in range(int(metagraph.n)):
-            axon = metagraph.axons[uid]
-            if not axon.is_serving:
-                continue
-            subnet_id = f"sn{uid}"
-            t0 = time.time()
-            try:
-                # Lightweight TCP connect probe — measures reachability + round-trip
-                with socket.create_connection((axon.ip, axon.port), timeout=2.0):
-                    pass
-                latency = time.time() - t0
-                self.record_observation(subnet_id, cost=0.0, latency=latency, success=True)
-            except Exception:
-                latency = time.time() - t0
-                self.record_observation(subnet_id, cost=0.0, latency=latency, success=False)
-            probed += 1
+        loop = asyncio.get_event_loop()
+        subnet_ids, tasks = [], []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            for uid in range(int(metagraph.n)):
+                axon = metagraph.axons[uid]
+                if not axon.is_serving:
+                    continue
+                subnet_ids.append(f"sn{uid}")
+                tasks.append(
+                    loop.run_in_executor(pool, _probe_axon_sync, axon.ip, axon.port)
+                )
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for subnet_id, result in zip(subnet_ids, results):
+            if isinstance(result, Exception):
+                self.record_observation(subnet_id, cost=0.0, latency=2.0, success=False)
+            else:
+                latency, success = result
+                self.record_observation(subnet_id, cost=0.0, latency=latency, success=success)
 
         bt.logging.debug(
-            f"SubnetProfiler: probed {probed} serving axons at block {current_block}."
+            f"SubnetProfiler: probed {len(subnet_ids)} axons at block {current_block}."
         )
 
     def record_observation(

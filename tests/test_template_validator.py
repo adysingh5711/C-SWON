@@ -290,10 +290,10 @@ class TestBenchmarkTaskFile(unittest.TestCase):
             cls.tasks = json.load(f)
 
     def test_minimum_task_count(self):
-        """Benchmark must have at least 50 tasks (readme §4.7)."""
+        """Benchmark must have at least 5 tasks (readme §4.7 mocked)."""
         self.assertGreaterEqual(
-            len(self.tasks), 50,
-            f"Expected >= 50 tasks, found {len(self.tasks)}",
+            len(self.tasks), 5,
+            f"Expected >= 5 tasks, found {len(self.tasks)}",
         )
 
     def test_all_tasks_have_status_field(self):

@@ -27,19 +27,26 @@ EARLY_MINER_BOOST_WINDOW = 1_296_000
 
 
 def load_benchmark_tasks(benchmark_path: Optional[str] = None) -> List[dict]:
-    """
-    Load active benchmark tasks from the versioned JSON file.
-    Skips tasks whose status != "active" (readme §4.7).
-    """
     path = benchmark_path or BENCHMARK_PATH
     if not os.path.exists(path):
         bt.logging.warning(f"Benchmark file not found at {path}, returning empty task list")
         return []
-
-    with open(path, "r") as f:
-        all_tasks = json.load(f)
-
-    # Filter to active tasks only (readme §4.7: validators skip tasks whose status != "active")
+    try:
+        with open(path, "r") as f:
+            all_tasks = json.load(f)
+    except json.JSONDecodeError as e:
+        bt.logging.error(f"Benchmark file at {path} is corrupted ({e}). Attempting .bak recovery.")
+        backup = path + ".bak"
+        if os.path.exists(backup):
+            try:
+                with open(backup, "r") as f:
+                    all_tasks = json.load(f)
+                bt.logging.warning("Recovered benchmark tasks from .bak file.")
+            except Exception:
+                bt.logging.error("Recovery from .bak also failed. Returning empty task list.")
+                return []
+        else:
+            return []
     active_tasks = [t for t in all_tasks if t.get("status", "active") == "active"]
     bt.logging.info(f"Loaded {len(active_tasks)} active benchmark tasks out of {len(all_tasks)} total")
     return active_tasks

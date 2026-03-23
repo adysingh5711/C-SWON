@@ -62,7 +62,29 @@ import copy
 import os
 
 # Secret salt — set via env var, never hardcoded in repo
-_SYNTHETIC_SALT = os.environ.get("CSWON_SYNTHETIC_SALT", "change-me-in-prod")
+_SYNTHETIC_SALT = os.environ.get("CSWON_SYNTHETIC_SALT", "")
+
+if not _SYNTHETIC_SALT:
+    _is_mock_mode = os.environ.get("CSWON_MOCK_EXEC", "true").lower() == "true"
+    if not _is_mock_mode:
+        # Live validator with no salt — fail immediately, loud and clear
+        raise RuntimeError(
+            "\n\nCRITICAL: CSWON_SYNTHETIC_SALT env var is not set.\n"
+            "Running a live validator without a secret salt means miners can\n"
+            "pre-identify synthetic tasks by replicating the derivation logic.\n\n"
+            "Generate a secret salt with:\n"
+            "  python -c \"import secrets; print(secrets.token_hex(32))\"\n\n"
+            "Then set it in your environment:\n"
+            "  export CSWON_SYNTHETIC_SALT=<your-secret-value>\n"
+        )
+    else:
+        # Testnet / mock mode: use a random ephemeral salt for this session
+        import secrets as _secrets
+        _SYNTHETIC_SALT = _secrets.token_hex(32)
+        bt.logging.warning(
+            "CSWON_SYNTHETIC_SALT not set — using ephemeral random salt for this "
+            "mock/testnet session. Set the env var for stable cross-restart behavior."
+        )
 
 # ── Temporal Consistency Constants (readme §2.5, issue 1.5) ─────────────────
 
@@ -84,8 +106,8 @@ _last_lifecycle_tempo: int = -1
 _score_history: Dict[int, deque] = defaultdict(lambda: deque(maxlen=10))
 
 # Audit flag log (issue 3.6) — kept in memory, exposed via HTTP
-_audit_flags: List[dict] = []
 _AUDIT_FLAG_MAX = 500  # cap in-memory list
+_audit_flags: deque = deque(maxlen=_AUDIT_FLAG_MAX)
 _audit_flags_lock = threading.Lock()
 
 
@@ -95,7 +117,7 @@ class _AuditHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/audit-flags":
             with _audit_flags_lock:
-                body = json.dumps(_audit_flags[-100:]).encode()
+                body = json.dumps(list(_audit_flags)[-100:]).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -211,8 +233,7 @@ def _check_temporal_consistency(uid: int, score: float, current_block: int) -> N
             bt.logging.warning(flag["message"])
             with _audit_flags_lock:
                 _audit_flags.append(flag)
-                if len(_audit_flags) > _AUDIT_FLAG_MAX:
-                    _audit_flags.pop(0)
+                # deque(maxlen=500) evicts oldest automatically — no pop(0) needed
 
     history.append(score)
 

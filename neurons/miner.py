@@ -70,7 +70,7 @@ class Miner(BaseMinerNeuron):
         )
 
         # Refresh subnet profiles every 100 blocks (readme §3.6)
-        self.profiler.refresh(self.metagraph, self.block)
+        await self.profiler.refresh_async(self.metagraph, self.block)
 
         # Enrich available_tools with locally observed history before workflow design
         enriched_tools = self.profiler.enrich_tools(synapse.available_tools or {})
@@ -150,27 +150,29 @@ class Miner(BaseMinerNeuron):
         """
         Extract ordered capability chain from the task description.
         Returns a list of action strings that form the DAG nodes.
+        Uses multi-token phrase matching to prevent keyword collisions (fix 6).
         """
+        desc = desc.lower()
         caps = []
         # Retrieval signals
-        if any(w in desc for w in ["retrieve", "search", "fetch", "find documents", "lookup"]):
+        if any(w in desc for w in ["retrieve context", "search web", "fetch data", "find documents", "lookup reference"]):
             caps.append("retrieve_context")
         # Code signals
-        if any(w in desc for w in ["code", "implement", "function", "class", "script", "program"]):
+        if any(w in desc for w in ["write source code", "implement function", "python class", "write script", "python program", "python code", "generate code"]):
             caps.append("generate_code")
-            if any(w in desc for w in ["test", "coverage", "unit test"]):
+            if any(w in desc for w in ["unit test", "write tests", "test coverage"]):
                 caps.append("generate_tests")
-            if any(w in desc for w in ["review", "lint", "style", "quality"]):
+            if any(w in desc for w in ["review code", "lint code", "style check", "code quality"]):
                 caps.append("review_code")
         # Transform signals
-        if any(w in desc for w in ["transform", "convert", "parse", "extract", "format", "schema"]):
+        if any(w in desc for w in ["transform data", "convert format", "parse json", "extract fields", "format output", "data schema"]):
             caps.append("transform_data")
-        # Reasoning / generation signals (always add if nothing else matched)
-        if any(w in desc for w in ["summarize", "answer", "explain", "generate", "write", "describe"]) or not caps:
-            caps.append("generate_answer")
         # Fact-check signals
-        if any(w in desc for w in ["verify", "fact", "check", "validate", "ground truth"]):
+        if any(w in desc for w in ["verify claim", "fact check", "validate statement", "ground truth"]):
             caps.append("verify_facts")
+        # Reasoning / generation signals (always add if nothing else matched)
+        if any(w in desc for w in ["summarize text", "answer question", "explain concept", "generate report", "write essay", "describe image"]) or not caps:
+            caps.append("generate_answer")
         return caps if caps else ["generate_answer"]
 
     def _build_params(self, action: str, desc: str, prev_id) -> dict:

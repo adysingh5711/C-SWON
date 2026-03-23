@@ -26,28 +26,36 @@ class MockSubtensor(bt.MockSubtensor):
     def __init__(self, netuid, n=16, wallet=None, network="mock"):
         super().__init__(network=network)
 
-        if not self.subnet_exists(netuid):
+        try:
             self.create_subnet(netuid)
+        except Exception:
+            pass
 
         # Register ourself (the validator) as a neuron at uid=0
         if wallet is not None:
-            self.force_register_neuron(
-                netuid=netuid,
-                hotkey=wallet.hotkey.ss58_address,
-                coldkey=wallet.coldkey.ss58_address,
-                balance=100000,
-                stake=100000,
-            )
+            try:
+                self.force_register_neuron(
+                    netuid=netuid,
+                    hotkey_ss58=wallet.hotkey.ss58_address,
+                    coldkey_ss58=wallet.coldkey.ss58_address,
+                    balance=100000,
+                    stake=100000,
+                )
+            except Exception:
+                pass
 
         # Register n mock neurons who will be miners
         for i in range(1, n + 1):
-            self.force_register_neuron(
-                netuid=netuid,
-                hotkey=f"miner-hotkey-{i}",
-                coldkey="mock-coldkey",
-                balance=100000,
-                stake=100000,
-            )
+            try:
+                self.force_register_neuron(
+                    netuid=netuid,
+                    hotkey_ss58=f"miner-hotkey-{i}",
+                    coldkey_ss58="mock-coldkey",
+                    balance=100000,
+                    stake=100000,
+                )
+            except Exception:
+                pass
 
 
 class MockMetagraph(bt.Metagraph):

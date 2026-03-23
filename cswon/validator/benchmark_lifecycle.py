@@ -175,17 +175,11 @@ class BenchmarkLifecycleTracker:
         return changes
 
     def _flush_status_changes(self, path: str, changes: Dict[str, str]) -> None:
-        """
-        Write status changes back to the benchmark JSON file (readme §4.7).
+        import shutil
 
-        Updated task entries will have their "status" field set to "quarantined"
-        or "deprecated". The file is read, modified in place, then written back.
-        Quarantined tasks also get a "quarantine_since_tempo" counter reset.
-        """
         if not os.path.exists(path):
-            bt.logging.error(f"Benchmark file not found at {path}; cannot write lifecycle changes.")
+            bt.logging.error(f"Benchmark file not found at {path}.")
             return
-
         try:
             with open(path, "r") as f:
                 tasks = json.load(f)
@@ -206,17 +200,29 @@ class BenchmarkLifecycleTracker:
                     elif new_status == "deprecated":
                         task["deprecation_reason"] = "auto-lifecycle"
                     elif new_status == "active":
-                        # Revert: clear quarantine metadata (issue 2.10)
                         task["quarantine_since_tempo"] = None
                         task["deprecation_reason"] = None
                     modified = True
 
         if modified:
+            # Step 1: Backup the live file before touching it
+            backup_path = path + ".bak"
             try:
-                with open(path, "w") as f:
-                    json.dump(tasks, f, indent=2)
+                shutil.copy2(path, backup_path)
             except IOError as e:
-                bt.logging.error(f"Failed to write benchmark lifecycle changes to {path}: {e}")
+                bt.logging.warning(f"Could not write benchmark backup: {e}")
+
+            # Step 2: Atomic write — write to .tmp then os.replace() (crash-safe on POSIX)
+            tmp_path = path + ".tmp"
+            try:
+                with open(tmp_path, "w") as f:
+                    json.dump(tasks, f, indent=2)
+                os.replace(tmp_path, path)
+                bt.logging.info(f"Benchmark lifecycle: {len(changes)} status change(s) atomically written to {path}")
+            except IOError as e:
+                bt.logging.error(f"Failed to atomically write benchmark changes: {e}")
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
 
     def save_state(self, path: str) -> None:
         import json, pathlib

@@ -95,7 +95,8 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
                 
                 p = subprocess.Popen(
                     ["python", "-m", "pytest", str(test_file), "-q", "--tb=no"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                    stdin=subprocess.DEVNULL
                 )
                 try:
                     out, _ = p.communicate(timeout=15)
@@ -111,7 +112,8 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
             lint_score = 1.0
             p2 = subprocess.Popen(
                 ["python", "-m", "pycodestyle", "--max-line-length=100", str(code_file)],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                stdin=subprocess.DEVNULL
             )
             try:
                 out2, _ = p2.communicate(timeout=10)

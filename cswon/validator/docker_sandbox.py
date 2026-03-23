@@ -74,6 +74,19 @@ def run_workflow_in_sandbox(
     )
 
 
+def _check_docker_cli() -> bool:
+    """Check Docker CLI is on PATH and the daemon is reachable."""
+    try:
+        r = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=5,
+        )
+        return r.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
 def _docker_execute(
     workflow_plan: dict,
     constraints: dict,
@@ -92,6 +105,13 @@ def _docker_execute(
     Falls back to mock mode gracefully if Docker is not available or the
     container fails to start.
     """
+    if not _check_docker_cli():
+        bt.logging.error(
+            "Docker CLI not available or daemon not running. "
+            "Install Docker 24.x+ or set CSWON_MOCK_EXEC=true for testnet."
+        )
+        return _fallback_mock(workflow_plan, constraints, total_estimated_cost)
+
     max_latency = constraints.get("max_latency_seconds", 30.0)
     timeout_s = max_latency * SANDBOX_TIMEOUT_MULTIPLIER
 

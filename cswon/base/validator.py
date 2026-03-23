@@ -366,7 +366,17 @@ class BaseValidatorNeuron(BaseNeuron):
         overlap = min(len(self.hotkeys), len(self.metagraph.hotkeys))
         for uid in range(overlap):
             if self.hotkeys[uid] != self.metagraph.hotkeys[uid]:
+                # Reset flat scores array
                 self.scores[uid] = 0
+                # Reset ScoreAggregator rolling window — new miner must start clean.
+                # Without this, a re-registered UID inherits the old miner's full
+                # 100-task history and gets immediate inflated weights.
+                if hasattr(self, "score_aggregator"):
+                    self.score_aggregator.score_windows[uid] = []
+                    self.score_aggregator.tasks_seen[uid] = 0
+                    bt.logging.debug(
+                        f"UID {uid} hotkey changed — ScoreAggregator window cleared."
+                    )
 
         # Resize scores to match current metagraph size (handle growth and shrink).
         if len(self.scores) != int(self.metagraph.n):
