@@ -1025,90 +1025,90 @@ The following items are intentionally deferred from v1 to keep the MVP honest an
 ```
 C-SWON/
 ├── .circleci/
-│   └── config.yml                   ← CI pipeline: lint, test, docker-build jobs
+│   └── config.yml                   # CI pipeline configuration
 ├── benchmarks/
-│   └── v1.json
+│   └── v1.json                     # Benchmark task dataset (versioned)
 ├── contrib/
-│   ├── CODE_REVIEW_DOCS.md
-│   ├── CONTRIBUTING.md              ← includes CircleCI documentation
-│   ├── DEVELOPMENT_WORKFLOW.md
-│   └── STYLE.md
+│   ├── CODE_REVIEW_DOCS.md          # Internal code review guidelines
+│   ├── CONTRIBUTING.md              # Contribution guidelines
+│   ├── DEVELOPMENT_WORKFLOW.md      # Developer workflow documentation
+│   └── STYLE.md                     # Code style guidelines
 ├── cswon/
 │   ├── api/
-│   │   ├── __init__.py
-│   │   └── get_query_axons.py
+│   │   ├── __init__.py              # Python package initialization
+│   │   └── get_query_axons.py       # Retrieves query axons
 │   ├── base/
 │   │   ├── utils/
-│   │   │   ├── __init__.py
-│   │   │   └── weight_utils.py
-│   │   ├── __init__.py
-│   │   ├── miner.py
-│   │   ├── neuron.py
-│   │   └── validator.py
+│   │   │   ├── __init__.py          # Python package initialization
+│   │   │   └── weight_utils.py      # Weight calculation utilities
+│   │   ├── __init__.py              # Base class initialization
+│   │   ├── miner.py                 # Universal base miner implementation
+│   │   ├── neuron.py                # Fundamental neuron logic
+│   │   └── validator.py             # Base validator class
 │   ├── miner/
-│   │   ├── __init__.py
-│   │   └── subnet_profiler.py       ← subnet cost/latency profiler (§3.6)
+│   │   ├── __init__.py              # Miner package initialization
+│   │   └── subnet_profiler.py       # Subnet cost/latency profiler (§3.6)
 │   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── config.py
-│   │   ├── logging.py
-│   │   ├── misc.py
-│   │   └── uids.py
+│   │   ├── __init__.py              # Utility package initialization
+│   │   ├── config.py                # Global config parsing
+│   │   ├── logging.py               # Centralized logging setup
+│   │   ├── misc.py                  # Miscellaneous helpers
+│   │   └── uids.py                  # Miner/Validator UID discovery logic
 │   ├── validator/
-│   │   ├── __init__.py
-│   │   ├── base.py                  ← re-exports BaseValidatorNeuron
-│   │   ├── benchmark_lifecycle.py   ← quarantine/deprecation + quarterly rotation (§4.7)
-│   │   ├── config.py
-│   │   ├── docker_sandbox.py        ← Docker sandbox runner (§4.8 stage 3)
-│   │   ├── executor.py              ← parallel-tier DAG execution (§4.8)
-│   │   ├── executor_entrypoint.py   ← Docker container entry module (§4.8)
-│   │   ├── forward.py               ← six-stage validator pipeline
-│   │   ├── miner_selection.py       ← immunity-aware miner selection
-│   │   ├── query_loop.py            ← async sub-block query loop (§4.1)
-│   │   ├── reward.py                ← composite scoring + warm-up scale (§4.4)
-│   │   ├── scoring.py               ← re-exports scoring symbols
-│   │   └── weight_setter.py         ← tempo-aligned weight submission (§4.1)
-│   ├── __init__.py
-│   ├── mock.py
-│   ├── protocol.py                  ← WorkflowSynapse only (Dummy removed)
-│   └── subnet_links.py
+│   │   ├── __init__.py              # Validator package initialization
+│   │   ├── base.py                  # Re-exports BaseValidatorNeuron
+│   │   ├── benchmark_lifecycle.py   # Quarantine/deprecation + quarterly rotation (§4.7)
+│   │   ├── config.py                # Validator config (constants and thresholds)
+│   │   ├── docker_sandbox.py        # Isolated Docker container runner (§4.8 stage 3)
+│   │   ├── executor.py              # Parallel-tier DAG evaluation engine (§4.8)
+│   │   ├── executor_entrypoint.py   # Docker sandbox entry script (§4.8)
+│   │   ├── forward.py               # Main validation loop/logic
+│   │   ├── miner_selection.py       # Immunity-aware miner selection strategy
+│   │   ├── query_loop.py            # Asynchronous sub-block request loop (§4.1)
+│   │   ├── reward.py                # Composite scoring formula with warm-up scaling (§4.4)
+│   │   ├── scoring.py               # Scoring utilities and exports
+│   │   └── weight_setter.py         # Tempo-aligned weight submission (§4.1)
+│   ├── __init__.py                  # Root package initialization
+│   ├── mock.py                      # Mock components for local testing
+│   ├── protocol.py                  # WorkflowSynapse protocol definition
+│   └── subnet_links.py              # Partner subnet registry
 ├── docs/
 │   ├── stream_tutorial/
-│   │   ├── client.py
-│   │   ├── config.py
-│   │   ├── miner.py
-│   │   ├── protocol.py
-│   │   └── README.md
-│   ├── ops_runbook.md               ← Execution Support Pool operator runbook (§4.6)
-│   ├── running_on_mainnet.md
-│   ├── running_on_staging.md
-│   └── running_on_testnet.md
+│   │   ├── client.py                # Tutorial client example
+│   │   ├── config.py                # Tutorial config
+│   │   ├── miner.py                 # Tutorial miner example
+│   │   ├── protocol.py              # Tutorial protocol example
+│   │   └── README.md                # Tutorial documentation
+│   ├── ops_runbook.md               # Execution Support Pool operator runbook (§4.6)
+│   ├── running_on_mainnet.md        # Mainnet deployment guide
+│   ├── running_on_staging.md        # Staging deployment guide
+│   └── running_on_testnet.md        # Testnet deployment guide
 ├── neurons/
-│   ├── __init__.py
-│   ├── miner.py
-│   └── validator.py
+│   ├── __init__.py                  # Neuron scripts initialization
+│   ├── miner.py                     # Miner execution entry point
+│   └── validator.py                 # Validator execution entry point
 ├── scripts/
-│   ├── check_compatibility.sh
-│   ├── check_requirements_changes.sh
-│   ├── exec_support_payout.py       ← Exec Support Pool payout tool (§4.6)
-│   └── install_staging.sh
+│   ├── check_compatibility.sh       # Environment compatibility check
+│   ├── check_requirements_changes.sh # Dependency change detection
+│   ├── exec_support_payout.py       # Exec Support Pool payout tool (§4.6)
+│   └── install_staging.sh           # Automated staging installation script
 ├── tests/
-│   ├── __init__.py
-│   ├── helpers.py
-│   ├── test_executor.py
-│   ├── test_mock.py
-│   ├── test_protocol.py
-│   ├── test_scoring.py
-│   └── test_template_validator.py
+│   ├── __init__.py                  # Test package initialization
+│   ├── helpers.py                   # Testing utilities
+│   ├── test_executor.py             # DAG executor unit tests
+│   ├── test_mock.py                 # Mock component tests
+│   ├── test_protocol.py             # Protocol serialization tests
+│   ├── test_scoring.py              # Scoring formula unit tests
+│   └── test_template_validator.py   # Structural validator tests
 ├── verify/
-│   ├── generate.py                  ← signs coldkey messages for identity verification
-│   └── verify.py                    ← verifies coldkey signatures
-├── Dockerfile                       ← builds cswon-executor:latest sandbox image (§4.8)
-├── LICENSE
-├── min_compute.yml
-├── README.md
-├── requirements.txt
-└── setup.py
+│   ├── generate.py                  # signs coldkey messages for identity verification
+│   └── verify.py                    # verifies coldkey signatures
+├── Dockerfile                       # sandbox image definition (§4.8)
+├── LICENSE                          # MIT License
+├── min_compute.yml                  # Minimal compute requirements
+├── README.md                        # Documentation entry point
+├── requirements.txt                 # Python dependencies
+└── setup.py                         # Package installation script
 ```
 
 ---
