@@ -844,23 +844,31 @@ sequenceDiagram
     participant M as Miner Pool
     participant P as Partner Subnets (off-chain)
 
-    Note over V: seed=hash(validator_hotkey+block); task=benchmarks[seed%len]
-    V->>M: Task Package (validator-specific pseudorandom task at this block)
-    M-->>V: Workflow Plans (DataRef-compliant, includes scoring_version)
+    Note over V: seed = hash(validator_hotkey + block)
+    Note over V: task = benchmarks[seed % len]
+
+    V->>M: Task Package (validator-specific pseudorandom task)
+    M-->>V: Workflow Plans (DataRef-compliant, scoring_version included)
 
     Note over V: Sandboxed Docker execution
+
     V->>P: Off-chain calls via registered hotkey
-    P-->>V: Outputs (logged locally — no on-chain receipt)
+    P-->>V: Outputs (logged locally, no on-chain receipt)
 
     Note over V: Quality scoring (no LLM judge)
-    Note over V: Code → test runner | RAG → ROUGE-L | Agent → checklist
+    Note over V: Code -> test runner
+    Note over V: RAG -> ROUGE-L
+    Note over V: Agent -> checklist
 
-    Note over V: S = 0.50·success×completion_ratio + 0.25·cost + 0.15·latency + 0.10·reliability
-    Note over V: Apply immunity warm-up scale if miner is new (< 20 tasks seen)
+    Note over V: S = 0.50 * success * completion_ratio
+    Note over V: + 0.25 * cost + 0.15 * latency + 0.10 * reliability
+
+    Note over V: Apply immunity warm-up scale if miner is new (< 20 tasks)
 
     Note over V: Rolling 100-task equal-weight window update
 
-    Note over V: Once per tempo → set_weights() with 15% cap per miner
+    Note over V: Once per tempo -> set_weights() with 15% cap per miner
+
     Note over M: Alpha rewards via Yuma Consensus
     Note over V: Alpha rewards (validator take + staker dividends)
 ```
