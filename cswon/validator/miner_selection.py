@@ -95,8 +95,17 @@ def load_benchmark_tasks(benchmark_path: Optional[str] = None) -> List[dict]:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Benchmark file not found at {path}")
 
-    with open(path, "r") as f:
-        all_tasks = json.load(f)
+    try:
+        with open(path, "r") as f:
+            all_tasks = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        bt.logging.warning(f"Benchmark file {path} is corrupted ({e}). Attempting recovery from .bak")
+        bak_path = path + ".bak"
+        if os.path.exists(bak_path):
+            with open(bak_path, "r") as f:
+                all_tasks = json.load(f)
+        else:
+            raise ValueError(f"Benchmark file {path} is corrupted and no .bak found.") from e
 
     if not isinstance(all_tasks, list) or not all_tasks:
         raise ValueError(f"Benchmark file at {path} must be a non-empty list")
