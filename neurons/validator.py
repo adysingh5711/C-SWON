@@ -55,7 +55,26 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
+        # Startup preflight (perplex_fix4 §4)
+        self._startup_preflight()
+
         bt.logging.info("C-SWON Validator initialised")
+
+    def _startup_preflight(self):
+        """
+        Aborts startup if no serving miners found (perplex_fix4 §4).
+        """
+        serving_miners = [
+            uid
+            for uid in range(int(self.metagraph.n))
+            if self.metagraph.axons[uid].is_serving
+            and not self.metagraph.validator_permit[uid]
+            and uid != self.uid
+        ]
+        if not serving_miners:
+            raise RuntimeError(
+                "No serving miners found on subnet; start at least one miner before validator."
+            )
 
     async def forward(self):
         """

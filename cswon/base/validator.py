@@ -449,12 +449,23 @@ class BaseValidatorNeuron(BaseNeuron):
                 bt.logging.warning(f"Could not save ScoreAggregator state: {e}")
                 
         # Persist BenchmarkLifecycleTracker (fix 3)
-        if hasattr(self, "lifecycle_tracker"):
-            lc_path = pathlib.Path(self.config.neuron.full_path) / "lifecycle_tracker.json"
-            try:
-                self.lifecycle_tracker.save_state(str(lc_path))
             except Exception as e:
                 bt.logging.warning(f"Could not save BenchmarkLifecycleTracker state: {e}")
+
+        # Persist runtime state: synthetic salt and temporal score history (perplex_fix4 §5)
+        runtime_path = pathlib.Path(self.config.neuron.full_path) / "runtime_state.json"
+        try:
+            import cswon.validator.forward as _fwd
+
+            runtime_data = {
+                "synthetic_salt": os.environ.get("CSWON_SYNTHETIC_SALT", ""),
+                "score_history": {
+                    str(uid): list(scores) for uid, scores in _fwd._score_history.items()
+                },
+            }
+            runtime_path.write_text(json.dumps(runtime_data))
+        except Exception as e:
+            bt.logging.warning(f"Could not save runtime state: {e}")
 
     def load_state(self):
         """Loads the state of the validator from a file, including ScoreAggregator (fix 1.2, fix 2.8)."""
@@ -491,10 +502,24 @@ class BaseValidatorNeuron(BaseNeuron):
                 bt.logging.warning(f"Could not restore ScoreAggregator state: {e}")
                 
         # Restore BenchmarkLifecycleTracker (fix 3)
-        if hasattr(self, "lifecycle_tracker"):
-            lc_path = pathlib.Path(self.config.neuron.full_path) / "lifecycle_tracker.json"
-            try:
-                self.lifecycle_tracker.load_state(str(lc_path))
                 bt.logging.info("BenchmarkLifecycleTracker state restored from disk.")
             except Exception as e:
                 bt.logging.warning(f"Could not load BenchmarkLifecycleTracker state: {e}")
+
+        # Restore runtime state: synthetic salt and temporal score history (perplex_fix4 §5)
+        runtime_path = pathlib.Path(self.config.neuron.full_path) / "runtime_state.json"
+        if runtime_path.exists():
+            try:
+                runtime_data = json.loads(runtime_path.read_text())
+                if runtime_data.get("synthetic_salt") and not os.environ.get(
+                    "CSWON_SYNTHETIC_SALT"
+                ):
+                    os.environ["CSWON_SYNTHETIC_SALT"] = runtime_data["synthetic_salt"]
+
+                import cswon.validator.forward as _fwd
+
+                for uid, vals in runtime_data.get("score_history", {}).items():
+                    _fwd._score_history[int(uid)].extend(vals)
+                bt.logging.info("Runtime state restored from disk.")
+            except Exception as e:
+                bt.logging.warning(f"Could not restore runtime state: {e}")

@@ -92,8 +92,17 @@ Navigate to your C-SWON local repository, ensure dependencies are installed (`pi
      --subtensor.network test \
      --wallet.name vali \
      --wallet.hotkey default \
-     --wandb.off
+      --wandb.off
    ```
+
+## 6.1 Required environment variables
+
+Export these before starting the validator (perplex_fix4 §7):
+
+```bash
+export CSWON_MOCK_EXEC=true
+export CSWON_SYNTHETIC_SALT=$(python -c "import secrets; print(secrets.token_hex(32))")
+```
 
 ---
 

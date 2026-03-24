@@ -25,31 +25,93 @@ from cswon.validator.config import (
 # 6-month boost window in blocks (~12 s/block, 30 days/month → 6×30×24×300 = 1,296,000)
 EARLY_MINER_BOOST_WINDOW = 1_296_000
 
+REQUIRED_TASK_FIELDS = {
+    "task_id",
+    "task_type",
+    "description",
+    "constraints",
+    "available_tools",
+    "reference",
+}
+
+
+def _validate_task_schema(task: dict) -> None:
+    missing = REQUIRED_TASK_FIELDS - set(task.keys())
+    if missing:
+        raise ValueError(
+            f"Task {task.get('task_id', '<unknown>')} missing fields: {sorted(missing)}"
+        )
+
+    if task["task_type"] not in {"code", "rag", "agent", "data_transform"}:
+        raise ValueError(f"Unsupported task_type: {task['task_type']}")
+
+    if not isinstance(task["available_tools"], dict) or not task["available_tools"]:
+        raise ValueError(f"Task {task['task_id']} has empty available_tools")
+
+    allowed = set(task.get("constraints", {}).get("allowed_subnets", []))
+    if allowed and not allowed.issubset(set(task["available_tools"].keys())):
+        raise ValueError(
+            f"Task {task['task_id']} has allowed_subnets outside available_tools: "
+            f"{sorted(allowed - set(task['available_tools'].keys()))}"
+        )
+
+
+def _normalise_task(task: dict) -> dict:
+    task = dict(task)
+    task["quality_criteria"] = task.get("quality_criteria", {})
+    task["constraints"] = task.get("constraints", {})
+    task["available_tools"] = task.get("available_tools", {})
+    task["routing_policy"] = task.get(
+        "routing_policy",
+        {
+            "default": {
+                "miner_selection": "top_k_stake_weighted",
+                "top_k": 1,
+                "aggregation": "majority_vote",
+            }
+        },
+    )
+
+    allowed = task["constraints"].get("allowed_subnets")
+    if not allowed:
+        task["constraints"]["allowed_subnets"] = list(task["available_tools"].keys())
+    else:
+        task["constraints"]["allowed_subnets"] = [
+            s for s in allowed if s in task["available_tools"]
+        ]
+
+    if not task["constraints"]["allowed_subnets"]:
+        raise ValueError(f"Task {task['task_id']} has no usable allowed_subnets")
+
+    task["description"] = str(task.get("description", "")).strip()
+    if not task["description"]:
+        raise ValueError(f"Task {task['task_id']} has empty description")
+
+    return task
+
 
 def load_benchmark_tasks(benchmark_path: Optional[str] = None) -> List[dict]:
     path = benchmark_path or BENCHMARK_PATH
     if not os.path.exists(path):
-        bt.logging.warning(f"Benchmark file not found at {path}, returning empty task list")
-        return []
-    try:
-        with open(path, "r") as f:
-            all_tasks = json.load(f)
-    except json.JSONDecodeError as e:
-        bt.logging.error(f"Benchmark file at {path} is corrupted ({e}). Attempting .bak recovery.")
-        backup = path + ".bak"
-        if os.path.exists(backup):
-            try:
-                with open(backup, "r") as f:
-                    all_tasks = json.load(f)
-                bt.logging.warning("Recovered benchmark tasks from .bak file.")
-            except Exception:
-                bt.logging.error("Recovery from .bak also failed. Returning empty task list.")
-                return []
-        else:
-            return []
+        raise FileNotFoundError(f"Benchmark file not found at {path}")
+
+    with open(path, "r") as f:
+        all_tasks = json.load(f)
+
+    if not isinstance(all_tasks, list) or not all_tasks:
+        raise ValueError(f"Benchmark file at {path} must be a non-empty list")
+
     active_tasks = [t for t in all_tasks if t.get("status", "active") == "active"]
-    bt.logging.info(f"Loaded {len(active_tasks)} active benchmark tasks out of {len(all_tasks)} total")
-    return active_tasks
+    if not active_tasks:
+        raise ValueError(f"No active benchmark tasks found in {path}")
+
+    validated_tasks = []
+    for task in active_tasks:
+        _validate_task_schema(task)
+        validated_tasks.append(_normalise_task(task))
+
+    bt.logging.info(f"Loaded {len(validated_tasks)} validated benchmark tasks from {path}")
+    return validated_tasks
 
 
 def select_task_for_block(
@@ -127,9 +189,9 @@ def select_miners_for_query(
 
     # Determine if the 6-month early boost is still active (issue 3.7)
     early_boost_active = (
-        subnet_launch_block is None
-        or current_block is None
-        or (current_block - subnet_launch_block) < EARLY_MINER_BOOST_WINDOW
+        subnet_launch_block is not None
+        and current_block is not None
+        and (current_block - subnet_launch_block) < EARLY_MINER_BOOST_WINDOW
     )
 
     candidates = []
