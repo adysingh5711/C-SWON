@@ -65,23 +65,15 @@ def compute_weights(
 
 
 def set_weights_on_chain(
-    subtensor: "bt.subtensor",
-    wallet: "bt.wallet",
-    netuid: int,
-    miner_uids: List[int],
-    normalised_weights: List[float],
-    spec_version: int,
+    subtensor,
+    wallet,
+    netuid,
+    miner_uids,
+    normalised_weights,
+    spec_version,
 ) -> bool:
-    """
-    Submit weights to chain (readme §4.1).
-
-    Uses wait_for_inclusion=False to avoid blocking the event loop.
-
-    Returns:
-        True if submission was accepted.
-    """
     try:
-        result, msg = subtensor.set_weights(
+        response = subtensor.set_weights(
             wallet=wallet,
             netuid=netuid,
             uids=np.array(miner_uids, dtype=np.int64),
@@ -91,13 +83,24 @@ def set_weights_on_chain(
             version_key=spec_version,
         )
 
-        if result is True:
-            bt.logging.info("set_weights on chain successfully!")
-            return True
-        else:
-            bt.logging.error(f"set_weights failed: {msg}")
-            return False
+        # SDK v10 returns ExtrinsicResponse; SDK v9 returns (bool, str)
+        if hasattr(response, "is_success"):          # SDK v10 path
+            if response.is_success:
+                bt.logging.info("set_weights on chain successfully!")
+                return True
+            else:
+                bt.logging.error(f"set_weights failed: {response.error_message}")
+                return False
+        else:                                         # SDK v9 fallback
+            result, msg = response
+            if result is True:
+                bt.logging.info("set_weights on chain successfully!")
+                return True
+            else:
+                bt.logging.error(f"set_weights failed: {msg}")
+                return False
 
     except Exception as e:
         bt.logging.error(f"set_weights exception: {e}")
         return False
+
