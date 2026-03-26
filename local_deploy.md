@@ -91,13 +91,13 @@ PY
 Open **Terminal 1** and keep it running throughout.
 
 ```bash
-docker pull ghcr.io/opentensor/subtensor:devnet-ready
+docker pull ghcr.io/opentensor/subtensor-localnet:devnet-ready
 
-docker run --rm \
+docker run \
   --name local_chain \
   -p 9944:9944 \
   -p 9945:9945 \
-  ghcr.io/opentensor/subtensor:devnet-ready
+  ghcr.io/opentensor/subtensor-localnet:devnet-ready
 ```
 
 Wait for this line in the Docker output before proceeding:
@@ -135,10 +135,34 @@ btcli wallet new_hotkey  --wallet.name miner --wallet.hotkey default
 
 ## Step 5 — Fund wallets with local TAO
 
+The localnet image ships with pre-formatted Alice/Bob keys. Use Alice's account to fund your coldkeys:
+
 ```bash
-btcli wallet faucet --wallet.name owner --network ws://127.0.0.1:9944
-btcli wallet faucet --wallet.name vali  --network ws://127.0.0.1:9944
-btcli wallet faucet --wallet.name miner --network ws://127.0.0.1:9944
+python - <<'PY'
+import bittensor as bt
+from substrateinterface import Keypair
+
+subtensor = bt.subtensor(network="ws://127.0.0.1:9944")
+
+# Alice's keypair — the default funded account on every localnet
+alice = Keypair.create_from_uri("//Alice")
+
+# Fund owner, vali, miner coldkeys
+import json
+
+wallets_to_fund = ["owner", "vali", "miner"]
+for name in wallets_to_fund:
+    w = bt.wallet(name=name)
+    addr = w.coldkeypub.ss58_address
+    result = subtensor.substrate.compose_call(
+        call_module="Balances",
+        call_function="transfer_keep_alive",
+        call_params={"dest": addr, "value": 1_000_000_000_000},  # 1000 TAO
+    )
+    extrinsic = subtensor.substrate.create_signed_extrinsic(call=result, keypair=alice)
+    receipt = subtensor.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+    print(f"Funded {name} ({addr}): {receipt.is_success}")
+PY
 ```
 
 Verify balances:
@@ -174,12 +198,14 @@ btcli subnet list --network ws://127.0.0.1:9944
 Replace `<netuid>` with the value from Step 6.
 
 ```bash
+# Register validator hotkey onto subnet
 btcli subnets register \
   --network ws://127.0.0.1:9944 \
   --netuid <netuid> \
   --wallet.name vali \
   --wallet.hotkey default
 
+# Register miner hotkey onto subnet
 btcli subnets register \
   --network ws://127.0.0.1:9944 \
   --netuid <netuid> \
@@ -187,14 +213,35 @@ btcli subnets register \
   --wallet.hotkey default
 ```
 
-Stake the validator so it can set weights:
+If either command errors with "unknown command", use the SDK directly:
+
+```bash
+python - <<'PY'
+import bittensor as bt
+
+subtensor = bt.subtensor(network="ws://127.0.0.1:9944")
+netuid = int(input("Enter netuid (most likely 1): "))
+
+for wallet_name, hotkey_name in [("vali", "default"), ("miner", "default")]:
+    w = bt.wallet(name=wallet_name, hotkey=hotkey_name)
+    result = subtensor.register(
+        wallet=w,
+        netuid=netuid,
+        wait_for_inclusion=True,
+        wait_for_finalization=True,
+    )
+    print(f"Registered {wallet_name}: {result}")
+PY
+```
+
+Stake the validator so it can set weights (explicit `--amount` required in btcli 9.x):
 
 ```bash
 btcli stake add \
   --network ws://127.0.0.1:9944 \
-  --netuid <netuid> \
   --wallet.name vali \
-  --wallet.hotkey default
+  --wallet.hotkey default \
+  --amount 100
 ```
 
 Verify both are registered:
