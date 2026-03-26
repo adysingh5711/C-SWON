@@ -458,18 +458,29 @@ async def _execute_node_async(
     node_result = None
     actual_retries = 0
 
+    # Guard: experimental same-metagraph execution is NOT real cross-subnet
+    # orchestration and must never activate on testnet accidentally.
+    # Require an explicit opt-in env var beyond CSWON_MOCK_EXEC=false.
+    _experimental_enabled = (
+        os.environ.get("CSWON_ENABLE_EXPERIMENTAL_EXEC", "false").lower() == "true"
+    )
+    _effective_mock_mode = mock_mode or not _experimental_enabled
+
+    if not mock_mode and not _experimental_enabled:
+        bt.logging.warning(
+            f"Node {node_id}: CSWON_MOCK_EXEC=false but "
+            f"CSWON_ENABLE_EXPERIMENTAL_EXEC is not set. "
+            f"Falling back to mock. This is the correct testnet behavior."
+        )
+
     for attempt in range(declared_retry_count + 1):
         try:
-            if mock_mode:
+            if _effective_mock_mode:
                 node_result = _mock_execute_node(node, resolved_params)
             else:
                 node_result = await _experimental_same_metagraph_execute_async(
-                    node,
-                    resolved_params,
-                    partner_hotkey,
-                    routing_cfg,
-                    dendrite=dendrite,
-                    metagraph=metagraph,
+                    node, resolved_params, partner_hotkey, routing_cfg,
+                    dendrite=dendrite, metagraph=metagraph,
                 )
 
             if node_result and node_result.get("status") == "success":
@@ -515,13 +526,36 @@ async def _execute_tier_async(
     dendrite=None,
     metagraph=None,
 ) -> None:
-    """
-    Execute all nodes in a tier concurrently using asyncio.gather (readme §3.2).
+    # Pre-flight 1: budget already exhausted before this tier starts
+    if result.budget_aborted or result.actual_cost >= budget_ceiling:
+        result.budget_aborted = True
+        for node_id in tier:
+            if node_id not in result.context:
+                result.context[node_id] = {"status": "budget_abort", "output": None}
+        return
 
-    Nodes within the same tier have no dependency on each other and run
-    concurrently. Wall-clock S_latency is therefore the max branch time,
-    not the sum — correctly reflecting parallel DAG behaviour.
-    """
+    # Pre-flight 2: admit only the nodes whose estimated costs fit in
+    # the remaining budget. This prevents parallel coroutines from
+    # collectively overspending when there is an await yield mid-execution.
+    remaining = budget_ceiling - result.actual_cost
+    approved: List[str] = []
+    cumulative = 0.0
+    for node_id in tier:
+        node_cost = node_map.get(node_id, {}).get("estimated_cost", 0.001)
+        if cumulative + node_cost <= remaining:
+            approved.append(node_id)
+            cumulative += node_cost
+        else:
+            bt.logging.info(
+                f"Tier pre-admission: aborting node {node_id} "
+                f"(est_cost={node_cost:.4f} would exceed remaining={remaining:.4f})"
+            )
+            result.context[node_id] = {"status": "budget_abort", "output": None}
+
+    if not approved:
+        result.budget_aborted = True
+        return
+
     tasks = [
         _execute_node_async(
             node_id=node_id,
@@ -535,7 +569,7 @@ async def _execute_tier_async(
             dendrite=dendrite,
             metagraph=metagraph,
         )
-        for node_id in tier
+        for node_id in approved
     ]
     await asyncio.gather(*tasks)
 

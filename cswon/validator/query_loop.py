@@ -60,6 +60,77 @@ async def query_miners(
     return responses
 
 
+def _validate_workflow_plan(plan: dict) -> bool:
+    """
+    Structural integrity check for a miner's workflow_plan before execution.
+    Returns False and logs the reason if the plan is structurally invalid.
+    """
+    nodes = plan.get("nodes", [])
+    edges = plan.get("edges", [])
+
+    if not nodes:
+        bt.logging.debug("workflow_plan has no nodes")
+        return False
+
+    # 1. Node count cap — prevent runaway mock latency accumulation on testnet
+    MAX_NODES = 10
+    if len(nodes) > MAX_NODES:
+        bt.logging.debug(f"workflow_plan has {len(nodes)} nodes, max is {MAX_NODES}")
+        return False
+
+    # 2. Every node must have a non-empty string id, subnet, and action
+    node_ids = []
+    for n in nodes:
+        if not isinstance(n, dict):
+            bt.logging.debug("Node is not a dict")
+            return False
+        nid = n.get("id", "")
+        if not isinstance(nid, str) or not nid.strip():
+            bt.logging.debug(f"Node missing or empty id: {n}")
+            return False
+        if not n.get("subnet") or not n.get("action"):
+            bt.logging.debug(f"Node {nid} missing subnet or action")
+            return False
+        node_ids.append(nid)
+
+    # 3. No duplicate node IDs
+    if len(node_ids) != len(set(node_ids)):
+        bt.logging.debug(f"workflow_plan has duplicate node ids: {node_ids}")
+        return False
+
+    node_id_set = set(node_ids)
+
+    # 4. Every edge must reference valid node IDs
+    for edge in edges:
+        if not isinstance(edge, dict):
+            bt.logging.debug("Edge is not a dict")
+            return False
+        src = edge.get("from", "")
+        dst = edge.get("to", "")
+        if src not in node_id_set:
+            bt.logging.debug(f"Edge references unknown source node: {src}")
+            return False
+        if dst not in node_id_set:
+            bt.logging.debug(f"Edge references unknown target node: {dst}")
+            return False
+        if src == dst:
+            bt.logging.debug(f"Self-loop detected on node: {src}")
+            return False
+
+    # 5. Acyclicity: topological sort must account for ALL nodes
+    from cswon.validator.executor import topological_sort_tiers
+    tiers = topological_sort_tiers(nodes, edges)
+    sorted_node_count = sum(len(t) for t in tiers)
+    if sorted_node_count != len(nodes):
+        bt.logging.debug(
+            f"DAG is cyclic or has disconnected nodes: "
+            f"topo_sort returned {sorted_node_count} of {len(nodes)} nodes"
+        )
+        return False
+
+    return True
+
+
 def validate_response(
     response: WorkflowSynapse,
     expected_hotkey: str,
@@ -117,6 +188,13 @@ def validate_response(
         return False
     if "nodes" not in plan or "edges" not in plan:
         bt.logging.debug("workflow_plan missing 'nodes' or 'edges', rejecting")
+        return False
+
+    # NEW: deep structural integrity check
+    if not _validate_workflow_plan(plan):
+        bt.logging.debug(
+            f"workflow_plan from {expected_hotkey} failed integrity check, rejecting"
+        )
         return False
 
     return True
