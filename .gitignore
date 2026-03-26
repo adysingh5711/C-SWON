@@ -165,18 +165,4 @@ testing/
 .vscode/settings.json
 
 #CSWON
-implementation_plan.md
-task.md
-walkthrough.md
-pending.md
-implementation_plan2.md
-task2.md
-pending2.md
-walkthrough2.md
-implementation_plan3.md
-task3.md
-walkthrough3.md
-Cswon_audit_report.md
-pending3.md
-task4.md
-walkthrough4.md
+agy local dev docs/
