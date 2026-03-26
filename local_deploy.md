@@ -13,12 +13,6 @@ No testnet TAO required. No external APIs. No WandB.
 | Docker | any recent | `docker --version` |
 | Git | any | `git --version` |
 
-Install the Bittensor CLI if you do not have it:
-
-```bash
-pip install bittensor
-```
-
 ---
 
 ## Step 1 — Clone and install C-SWON
@@ -27,7 +21,7 @@ pip install bittensor
 git clone https://github.com/adysingh5711/C-SWON.git
 cd C-SWON
 
-# Create and activate a virtual environment (strongly recommended)
+# Create and activate a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
@@ -36,17 +30,28 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-Verify the package installed correctly:
+Verify:
 
 ```bash
 python -c "import cswon; print(cswon.__version__)"
+# Expected: 1.0.0
+
+btcli --version
+# Expected: BTCLI version: 9.x.x
+
+python -c "import bittensor; print(bittensor.__version__)"
+# Expected: 10.x.x
 ```
+
+> If `btcli` is not found after activating the venv, run:
+> `pip install bittensor` — this installs both the SDK and btcli together.
 
 ---
 
 ## Step 2 — Create the `.env` file
 
-Run this **once**. It generates a persistent secret salt and sets mock mode.
+Run this **once** from inside the project directory.
+It generates a persistent secret salt and locks mock mode on.
 
 ```bash
 python -c "
@@ -88,11 +93,12 @@ PY
 
 ## Step 3 — Start the local Subtensor chain
 
-Open **Terminal 1** and keep it running throughout.
+Open **Terminal 1** and keep it running throughout the entire session.
 
 ```bash
 docker pull ghcr.io/opentensor/subtensor-localnet:devnet-ready
 
+# No --rm flag: preserves chain state if Docker is accidentally stopped
 docker run \
   --name local_chain \
   -p 9944:9944 \
@@ -100,10 +106,16 @@ docker run \
   ghcr.io/opentensor/subtensor-localnet:devnet-ready
 ```
 
-Wait for this line in the Docker output before proceeding:
+Wait for this line in Docker output before doing anything else:
 
 ```
 💤 Idle (0 peers), best: #0
+```
+
+If the container already exists from a previous run, resume it instead of creating a new one:
+
+```bash
+docker start local_chain
 ```
 
 Verify the chain is reachable:
@@ -116,11 +128,20 @@ btcli subnet list --network ws://127.0.0.1:9944
 
 ## Step 4 — Create wallets
 
-Open **Terminal 2** for all remaining steps.
+Open **Terminal 2**. Start every new terminal session in this project with:
 
 ```bash
-# Owner (creates and funds the subnet)
+cd C-SWON
+source .venv/bin/activate
+set -a && source .env && set +a
+```
+
+Create coldkeys and hotkeys:
+
+```bash
+# Owner (creates the subnet)
 btcli wallet new_coldkey --wallet.name owner
+btcli wallet new_hotkey --wallet.name owner --wallet.hotkey default
 
 # Validator
 btcli wallet new_coldkey --wallet.name vali
@@ -131,45 +152,77 @@ btcli wallet new_coldkey --wallet.name miner
 btcli wallet new_hotkey  --wallet.name miner --wallet.hotkey default
 ```
 
+> Wallets are stored at `~/.bittensor/wallets/` and persist across sessions.
+> Skip this step entirely if you have already created these wallets.
+
 ---
 
 ## Step 5 — Fund wallets with local TAO
 
-The localnet image ships with pre-formatted Alice/Bob keys. Use Alice's account to fund your coldkeys:
+The localnet image ships with a pre-funded Alice account (~1,000,000 TAO).
+Use Alice to fund your coldkeys.
+
+> **Port note:** Use `ws://127.0.0.1:9945` for all wallet operations in this step.
+> Port `9944` is used everywhere else.
+
+**5a — Import Alice's key:**
+
+```bash
+btcli wallet regen_coldkey \
+  --wallet.name alice \
+  --uri //Alice \
+  --network ws://127.0.0.1:9945
+```
+
+Press Enter when prompted for a password (no password needed for dev keys).
+
+**5b — Verify Alice has funds:**
+
+```bash
+btcli wallet balance \
+  --wallet.name alice \
+  --network ws://127.0.0.1:9945
+# Expected: ~1,000,000 TAO
+```
+
+**5c — Get your wallet addresses:**
 
 ```bash
 python - <<'PY'
 import bittensor as bt
-from substrateinterface import Keypair
-
-subtensor = bt.subtensor(network="ws://127.0.0.1:9944")
-
-# Alice's keypair — the default funded account on every localnet
-alice = Keypair.create_from_uri("//Alice")
-
-# Fund owner, vali, miner coldkeys
-import json
-
-wallets_to_fund = ["owner", "vali", "miner"]
-for name in wallets_to_fund:
-    w = bt.wallet(name=name)
-    addr = w.coldkeypub.ss58_address
-    result = subtensor.substrate.compose_call(
-        call_module="Balances",
-        call_function="transfer_keep_alive",
-        call_params={"dest": addr, "value": 1_000_000_000_000},  # 1000 TAO
-    )
-    extrinsic = subtensor.substrate.create_signed_extrinsic(call=result, keypair=alice)
-    receipt = subtensor.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-    print(f"Funded {name} ({addr}): {receipt.is_success}")
+for name in ["owner", "vali", "miner"]:
+    w = bt.Wallet(name=name)
+    print(f"{name}: {w.coldkeypub.ss58_address}")
 PY
 ```
 
-Verify balances:
+**5d — Transfer TAO from Alice to each wallet:**
 
 ```bash
-btcli wallet balance --wallet.name owner --network ws://127.0.0.1:9944
-btcli wallet balance --wallet.name vali  --network ws://127.0.0.1:9944
+btcli wallet transfer \
+  --wallet.name alice \
+  --destination <owner_address_from_5c> \
+  --network ws://127.0.0.1:9945
+
+btcli wallet transfer \
+  --wallet.name alice \
+  --destination <vali_address_from_5c> \
+  --network ws://127.0.0.1:9945
+
+btcli wallet transfer \
+  --wallet.name alice \
+  --destination <miner_address_from_5c> \
+  --network ws://127.0.0.1:9945
+```
+
+Enter `1000` when prompted for amount on each transfer.
+
+**5e — Verify balances:**
+
+```bash
+btcli wallet balance --wallet.name owner  --network ws://127.0.0.1:9945
+btcli wallet balance --wallet.name vali  --network ws://127.0.0.1:9945
+btcli wallet balance --wallet.name miner --network ws://127.0.0.1:9945
 ```
 
 ---
@@ -182,8 +235,8 @@ btcli subnet create \
   --wallet.name owner
 ```
 
-Note the `netuid` printed in the output. On a fresh local chain this is
-typically `1`. Use this value in every command from here onwards.
+Note the `netuid` printed in the output — typically `1` on a fresh local chain.
+**Write this value down. You will use it in every command from here onwards.**
 
 Verify:
 
@@ -198,14 +251,12 @@ btcli subnet list --network ws://127.0.0.1:9944
 Replace `<netuid>` with the value from Step 6.
 
 ```bash
-# Register validator hotkey onto subnet
 btcli subnets register \
   --network ws://127.0.0.1:9944 \
   --netuid <netuid> \
   --wallet.name vali \
   --wallet.hotkey default
 
-# Register miner hotkey onto subnet
 btcli subnets register \
   --network ws://127.0.0.1:9944 \
   --netuid <netuid> \
@@ -213,28 +264,7 @@ btcli subnets register \
   --wallet.hotkey default
 ```
 
-If either command errors with "unknown command", use the SDK directly:
-
-```bash
-python - <<'PY'
-import bittensor as bt
-
-subtensor = bt.subtensor(network="ws://127.0.0.1:9944")
-netuid = int(input("Enter netuid (most likely 1): "))
-
-for wallet_name, hotkey_name in [("vali", "default"), ("miner", "default")]:
-    w = bt.wallet(name=wallet_name, hotkey=hotkey_name)
-    result = subtensor.register(
-        wallet=w,
-        netuid=netuid,
-        wait_for_inclusion=True,
-        wait_for_finalization=True,
-    )
-    print(f"Registered {wallet_name}: {result}")
-PY
-```
-
-Stake the validator so it can set weights (explicit `--amount` required in btcli 9.x):
+Stake the validator so it can set weights:
 
 ```bash
 btcli stake add \
@@ -347,7 +377,7 @@ Validated 1 responses
 Miner 1: S=0.4200 (success=0.700, cost=0.300, latency=0.150, reliability=0.100)
 ```
 
-### Weight set log (once per tempo, every 360 blocks ≈ ~90s on local fast chain)
+### Weight set log (once per tempo, ~90s on local fast chain)
 
 ```
 set_weights on chain successfully!
@@ -355,31 +385,61 @@ set_weights on chain successfully!
 
 ---
 
+## Restart survival tests (required before going to testnet)
+
+**Test 1 — Validator state survives restart:**
+
+```bash
+# Ctrl+C the validator, restart it with the same command.
+# First line in logs must be:
+ScoreAggregator state restored from disk
+```
+
+**Test 2 — Miner reconnection:**
+
+```bash
+# Ctrl+C the miner, restart it.
+# Validator logs must show:
+Metagraph updated, re-syncing hotkeys
+```
+
+Both must pass before proceeding to testnet.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No benchmark tasks loaded` | `v1.json` not found or malformed | Run Step 8 verification |
+| `docker: No such image` | Wrong image name | Use `ghcr.io/opentensor/subtensor-localnet:devnet-ready` |
+| `docker: container name already in use` | Container exists from prior run | Run `docker start local_chain` instead |
+| `btcli wallet faucet` not found | Removed in btcli 9.x | Use Step 5 Alice transfer method |
+| `btcli subnet start` not found | Removed in btcli 9.x | Not needed — skip it |
+| `No benchmark tasks loaded` | `v1.json` missing or malformed | Run Step 8 verification |
 | `No serving miners found` | Validator started before miner | Start miner first, restart validator |
 | `CSWON_SYNTHETIC_SALT not set` | `.env` not sourced | Run `set -a && source .env && set +a` |
 | `ModuleNotFoundError: cswon` | Package not installed | Run `pip install -e .` |
-| `Connection refused ws://127.0.0.1:9944` | Docker chain not running | Check Terminal 1 |
-| `wallet not found` | Wrong `--wallet.name` | Check `~/.bittensor/wallets/` |
-| Validator exits with `RuntimeError` | No miner serving | Start miner, wait for axon to serve, restart validator |
-| `set_weights failed` | Validator not staked enough | Re-run `btcli stake add` |
+| `Connection refused ws://127.0.0.1:9944` | Chain not running | Check Terminal 1, run `docker start local_chain` |
+| `wallet not found` | Wrong wallet name | Check `~/.bittensor/wallets/` |
+| Validator exits with `RuntimeError` | No miner serving | Start miner first, restart validator |
+| `set_weights failed` | Validator not staked enough | Re-run `btcli stake add --amount 100` |
+| Alice balance shows 0 | Wrong port | Use `ws://127.0.0.1:9945` for wallet operations |
 
 ---
 
 ## Notes
 
-- `CSWON_MOCK_EXEC=true` is correct and intentional for local. The mock
-  executor provides deterministic outputs for all 4 benchmark task types
-  so miners are meaningfully differentiated by plan quality, not by random
-  network variance. Live cross-subnet execution is a mainnet concern.
-- `CSWON_ENABLE_EXPERIMENTAL_EXEC` must remain **unset**. Setting it
-  causes the executor to query back into the same local subnet's metagraph
-  pretending it is SN1/SN4, which produces garbage scores.
-- Block time on the local chain is ~250ms in fast-blocks mode, so a full
-  tempo (360 blocks) completes in roughly 90 seconds locally.
-- Do not set weights manually. The validator's `set_weights()` fires
+- **Port 9944** — chain RPC. Used for subnet creation, registration,
+  metagraph queries, and running neurons.
+- **Port 9945** — node RPC. Used for wallet balance and transfer only.
+- `CSWON_MOCK_EXEC=true` is correct and intentional for local and testnet.
+  The mock executor gives deterministic outputs for all benchmark task types
+  so miners are meaningfully differentiated by plan quality.
+  Live cross-subnet execution is a mainnet concern.
+- `CSWON_ENABLE_EXPERIMENTAL_EXEC` must remain **unset**. Setting it causes
+  the executor to query back into the same subnet's metagraph, producing
+  garbage scores.
+- Block time on the local chain is ~250ms, so a full tempo (360 blocks)
+  completes in roughly 90 seconds locally.
+- Do not set weights manually. The validator fires `set_weights()`
   automatically at each tempo boundary once it has scored at least one miner.
