@@ -7,11 +7,11 @@ No testnet TAO required. No external APIs. No WandB.
 
 ## Prerequisites
 
-| Requirement | Version | Check |
-|---|---|---|
-| Python | ≥ 3.10 | `python3 --version` |
-| Docker | any recent | `docker --version` |
-| Git | any | `git --version` |
+| Requirement | Version    | Check                 |
+| ----------- | ---------- | --------------------- |
+| Python      | ≥ 3.10    | `python3 --version` |
+| Docker      | any recent | `docker --version`  |
+| Git         | any        | `git --version`     |
 
 ---
 
@@ -220,6 +220,7 @@ Enter `1000` when prompted for amount on each transfer.
 **5e — Verify balances:**
 
 ```bash
+btcli wallet balance --wallet.name alice  --network ws://127.0.0.1:9945
 btcli wallet balance --wallet.name owner  --network ws://127.0.0.1:9945
 btcli wallet balance --wallet.name vali  --network ws://127.0.0.1:9945
 btcli wallet balance --wallet.name miner --network ws://127.0.0.1:9945
@@ -231,8 +232,10 @@ btcli wallet balance --wallet.name miner --network ws://127.0.0.1:9945
 
 ```bash
 btcli subnet create \
-  --network ws://127.0.0.1:9944 \
-  --wallet.name owner
+  --network ws://127.0.0.1:9945 \
+  --wallet.name owner \
+  --wallet.hotkey default \
+  --no-mev-protection
 ```
 
 Note the `netuid` printed in the output — typically `1` on a fresh local chain.
@@ -252,26 +255,37 @@ Replace `<netuid>` with the value from Step 6.
 
 ```bash
 btcli subnets register \
-  --network ws://127.0.0.1:9944 \
-  --netuid <netuid> \
+  --network ws://127.0.0.1:9945 \
+  --netuid 2 \
   --wallet.name vali \
   --wallet.hotkey default
 
 btcli subnets register \
-  --network ws://127.0.0.1:9944 \
-  --netuid <netuid> \
+  --network ws://127.0.0.1:9945 \
+  --netuid 2 \
   --wallet.name miner \
   --wallet.hotkey default
+```
+
+Required Step: Start Emissions
+
+```bash
+btcli subnet start \
+  --netuid 2 \
+  --wallet.name owner \
+  --network ws://127.0.0.1:9945
 ```
 
 Stake the validator so it can set weights:
 
 ```bash
 btcli stake add \
-  --network ws://127.0.0.1:9944 \
+  --network ws://127.0.0.1:9945 \
   --wallet.name vali \
   --wallet.hotkey default \
-  --amount 100
+  --amount 100 \
+  --no-mev-protection \
+  --tolerance 1.0
 ```
 
 Verify both are registered:
@@ -319,7 +333,6 @@ OK: 5 active benchmark tasks at .../benchmarks/v1.json
 **Always start the miner before the validator.**
 
 ```bash
-cd C-SWON
 source .venv/bin/activate
 set -a && source .env && set +a
 
@@ -409,21 +422,21 @@ Both must pass before proceeding to testnet.
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `docker: No such image` | Wrong image name | Use `ghcr.io/opentensor/subtensor-localnet:devnet-ready` |
-| `docker: container name already in use` | Container exists from prior run | Run `docker start local_chain` instead |
-| `btcli wallet faucet` not found | Removed in btcli 9.x | Use Step 5 Alice transfer method |
-| `btcli subnet start` not found | Removed in btcli 9.x | Not needed — skip it |
-| `No benchmark tasks loaded` | `v1.json` missing or malformed | Run Step 8 verification |
-| `No serving miners found` | Validator started before miner | Start miner first, restart validator |
-| `CSWON_SYNTHETIC_SALT not set` | `.env` not sourced | Run `set -a && source .env && set +a` |
-| `ModuleNotFoundError: cswon` | Package not installed | Run `pip install -e .` |
-| `Connection refused ws://127.0.0.1:9944` | Chain not running | Check Terminal 1, run `docker start local_chain` |
-| `wallet not found` | Wrong wallet name | Check `~/.bittensor/wallets/` |
-| Validator exits with `RuntimeError` | No miner serving | Start miner first, restart validator |
-| `set_weights failed` | Validator not staked enough | Re-run `btcli stake add --amount 100` |
-| Alice balance shows 0 | Wrong port | Use `ws://127.0.0.1:9945` for wallet operations |
+| Symptom                                    | Cause                            | Fix                                                        |
+| ------------------------------------------ | -------------------------------- | ---------------------------------------------------------- |
+| `docker: No such image`                  | Wrong image name                 | Use `ghcr.io/opentensor/subtensor-localnet:devnet-ready` |
+| `docker: container name already in use`  | Container exists from prior run  | Run `docker start local_chain` instead                   |
+| `btcli wallet faucet` not found          | Removed in btcli 9.x             | Use Step 5 Alice transfer method                           |
+| `btcli subnet start` not found           | Removed in btcli 9.x             | Not needed — skip it                                      |
+| `No benchmark tasks loaded`              | `v1.json` missing or malformed | Run Step 8 verification                                    |
+| `No serving miners found`                | Validator started before miner   | Start miner first, restart validator                       |
+| `CSWON_SYNTHETIC_SALT not set`           | `.env` not sourced             | Run `set -a && source .env && set +a`                    |
+| `ModuleNotFoundError: cswon`             | Package not installed            | Run `pip install -e .`                                   |
+| `Connection refused ws://127.0.0.1:9944` | Chain not running                | Check Terminal 1, run `docker start local_chain`         |
+| `wallet not found`                       | Wrong wallet name                | Check `~/.bittensor/wallets/`                            |
+| Validator exits with `RuntimeError`      | No miner serving                 | Start miner first, restart validator                       |
+| `set_weights failed`                     | Validator not staked enough      | Re-run `btcli stake add --amount 100`                    |
+| Alice balance shows 0                      | Wrong port                       | Use `ws://127.0.0.1:9945` for wallet operations          |
 
 ---
 

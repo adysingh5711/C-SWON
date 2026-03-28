@@ -171,7 +171,7 @@ def _is_within_immunity(
 
 
 def select_miners_for_query(
-    metagraph: "bt.metagraph",
+    metagraph: "bt.Metagraph",
     k: int = 10,
     exclude: Optional[List[int]] = None,
     min_stake_tao: float = 1.0,

@@ -15,7 +15,7 @@ _block_cache: dict = {}
 _block_cache_ttl: float = 12.0  # one Bittensor block is ~12 seconds
 
 
-def ttl_get_block(subtensor: "bt.subtensor") -> int:
+def ttl_get_block(subtensor: "bt.Subtensor") -> int:
     """
     Get the current block number with TTL caching to avoid excessive RPC calls.
     Cache expires every 12 seconds (one block period).

@@ -34,6 +34,16 @@ from cswon.protocol import WorkflowSynapse
 from cswon.base.miner import BaseMinerNeuron
 from cswon.validator.config import SCORING_VERSION
 from cswon.miner.subnet_profiler import SubnetProfiler
+from bittensor.core.axon import Axon
+
+def _safe_axon_del(self):
+    try:
+        if hasattr(self, "fast_server") and self.fast_server is not None:
+            self.stop()
+    except Exception:
+        pass
+
+Axon.__del__ = _safe_axon_del
 
 
 class Miner(BaseMinerNeuron):

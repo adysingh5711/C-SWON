@@ -17,7 +17,7 @@ from cswon.validator.config import QUERY_TIMEOUT_S
 
 
 async def query_miners(
-    dendrite: bt.dendrite,
+    dendrite: bt.Dendrite,
     axons: List[bt.AxonInfo],
     synapse: WorkflowSynapse,
     send_block: int,
@@ -134,7 +134,7 @@ def _validate_workflow_plan(plan: dict) -> bool:
 def validate_response(
     response: WorkflowSynapse,
     expected_hotkey: str,
-    metagraph: "bt.metagraph",
+    metagraph: "bt.Metagraph",
 ) -> bool:
     """
     Validate a miner response before accepting (readme §4.8 step 2).

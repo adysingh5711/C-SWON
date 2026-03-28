@@ -354,7 +354,7 @@ def get_miner_weight(
     miner_uid: int,
     tasks_seen: int,
     raw_score: float,
-    subtensor: "bt.subtensor",
+    subtensor: "bt.Subtensor",
     netuid: int,
     current_block: int,
 ) -> float:

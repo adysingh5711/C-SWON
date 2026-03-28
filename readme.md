@@ -478,7 +478,7 @@ import bittensor as bt
 QUERY_TIMEOUT_S = 9   # hard ceiling: must be < 12 s (1 block)
 
 async def query_miners(
-    dendrite: bt.dendrite,
+    dendrite: bt.Dendrite,
     axons: list[bt.AxonInfo],
     synapse: WorkflowSynapse,
     send_block: int,
@@ -550,7 +550,7 @@ def get_miner_weight(
     miner_uid:  int,
     tasks_seen: int,
     raw_score:  float,
-    subtensor:  "bt.subtensor",
+    subtensor:  "bt.Subtensor",
     netuid:     int,
     current_block: int,
 ) -> float:
@@ -594,8 +594,8 @@ __spec_version__    = 10000        # "1.0.0"  →  1*10000 + 0*100 + 0
 ```
 
 ```python
-# validator/base.py  (passed to bt.axon())
-axon = bt.axon(
+# validator/base.py  (passed to bt.Axon())
+axon = bt.Axon(
     wallet=wallet,
     config=config,
     port=port,

@@ -57,7 +57,7 @@ class BaseMinerNeuron(BaseNeuron):
         # Broadcast scoring version in axon metadata (readme §4.5)
         from cswon.validator.config import SCORING_VERSION, __spec_version__ as CSWON_SPEC_VERSION
         try:
-            self.axon = bt.axon(
+            self.axon = bt.Axon(
                 wallet=self.wallet,
                 config=self.config() if callable(self.config) else self.config,
                 info=bt.AxonInfo(
@@ -78,7 +78,7 @@ class BaseMinerNeuron(BaseNeuron):
                 pass  # older SDK — description field not available
         except TypeError:
             # Fallback for SDKs that don't support info= parameter
-            self.axon = bt.axon(
+            self.axon = bt.Axon(
                 wallet=self.wallet,
                 config=self.config() if callable(self.config) else self.config,
             )
@@ -130,7 +130,12 @@ class BaseMinerNeuron(BaseNeuron):
         bt.logging.info(
             f"Serving miner axon {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
         )
-        self.axon.serve(netuid=self.config.netuid, subtensor=self.subtensor)
+        self.subtensor.serve_axon(
+            netuid=self.config.netuid,
+            axon=self.axon,
+            wait_for_inclusion=False,
+            wait_for_finalization=False,
+        )
 
         # Start  starts the miner's axon, making it active on the network.
         self.axon.start()

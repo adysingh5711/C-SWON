@@ -67,7 +67,7 @@ class BaseValidatorNeuron(BaseNeuron):
         if self.config.mock:
             self.dendrite = MockDendrite(wallet=self.wallet)
         else:
-            self.dendrite = bt.dendrite(wallet=self.wallet)
+            self.dendrite = bt.Dendrite(wallet=self.wallet)
         bt.logging.info(f"Dendrite: {self.dendrite}")
 
         # Set up initial scoring weights for validation
@@ -107,7 +107,7 @@ class BaseValidatorNeuron(BaseNeuron):
         try:
             # Broadcast scoring version in axon metadata (readme §4.5)
             try:
-                self.axon = bt.axon(
+                self.axon = bt.Axon(
                     wallet=self.wallet,
                     config=self.config,
                     info=bt.AxonInfo(
@@ -131,12 +131,14 @@ class BaseValidatorNeuron(BaseNeuron):
                     pass  # older SDK
             except TypeError:
                 # Fallback for SDKs that don't support info= parameter
-                self.axon = bt.axon(wallet=self.wallet, config=self.config)
+                self.axon = bt.Axon(wallet=self.wallet, config=self.config)
 
             try:
                 self.subtensor.serve_axon(
                     netuid=self.config.netuid,
                     axon=self.axon,
+                    wait_for_inclusion=False,
+                    wait_for_finalization=False,
                 )
                 bt.logging.info(
                     f"Running validator {self.axon} on network: "

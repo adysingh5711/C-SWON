@@ -21,7 +21,7 @@ from cswon.validator.reward import ScoreAggregator
 def should_set_weights(
     current_block: int,
     last_set_block: int,
-    subtensor: "bt.subtensor",
+    subtensor: "bt.Subtensor",
     netuid: int,
 ) -> bool:
     """
