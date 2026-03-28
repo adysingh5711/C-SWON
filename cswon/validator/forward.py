@@ -289,6 +289,7 @@ async def forward(self):
         metagraph=self.metagraph,
         k=self.config.neuron.sample_size,
         exclude=[self.uid],
+        min_stake_tao=0.0 if self.config.subtensor.network == "local" else 1.0,
         subtensor=self.subtensor,           # ← chain immunity lookup (fix 2.5)
         netuid=self.config.netuid,           # ← chain immunity lookup (fix 2.5)
         current_block=self.block,            # ← chain immunity lookup (fix 2.5)

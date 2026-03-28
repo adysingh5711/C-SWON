@@ -87,8 +87,13 @@ class BaseValidatorNeuron(BaseNeuron):
         else:
             bt.logging.warning("axon off, not serving ip to chain.")
 
-        # Create asyncio event loop to manage async tasks.
-        self.loop = asyncio.get_event_loop()
+        # Python 3.14 no longer creates a default main-thread loop implicitly.
+        # Create and register one when needed so validator startup remains stable.
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
 
         # Instantiate runners
         self.should_exit: bool = False
@@ -461,7 +466,8 @@ class BaseValidatorNeuron(BaseNeuron):
         # Persist runtime state: synthetic salt and temporal score history (perplex_fix4 §5)
         runtime_path = pathlib.Path(self.config.neuron.full_path) / "runtime_state.json"
         try:
-            import cswon.validator.forward as _fwd
+            import importlib
+            _fwd = importlib.import_module("cswon.validator.forward")
 
             runtime_data = {
                 "synthetic_salt": os.environ.get("CSWON_SYNTHETIC_SALT", ""),
@@ -498,7 +504,8 @@ class BaseValidatorNeuron(BaseNeuron):
                 persisted_count = agg_data.get("tasks_executed_this_tempo", 0)
                 self.score_aggregator.tasks_executed_this_tempo = persisted_count
                 # Also sync the forward.py module-level counter
-                import cswon.validator.forward as _fwd
+                import importlib
+                _fwd = importlib.import_module("cswon.validator.forward")
                 _fwd._tasks_executed_this_tempo = int(persisted_count)
                 bt.logging.info(
                     f"ScoreAggregator state restored from disk "
@@ -526,7 +533,8 @@ class BaseValidatorNeuron(BaseNeuron):
                 ):
                     os.environ["CSWON_SYNTHETIC_SALT"] = runtime_data["synthetic_salt"]
 
-                import cswon.validator.forward as _fwd
+                import importlib
+                _fwd = importlib.import_module("cswon.validator.forward")
 
                 for uid, vals in runtime_data.get("score_history", {}).items():
                     _fwd._score_history[int(uid)].extend(vals)

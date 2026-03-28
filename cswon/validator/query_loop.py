@@ -153,15 +153,21 @@ def validate_response(
     Returns:
         True if the response is valid and should be accepted.
     """
-    # Check dendrite hotkey matches expected
-    if response.dendrite is None or response.dendrite.hotkey is None:
-        bt.logging.debug("Response missing dendrite/hotkey, rejecting")
+    # The responder identity lives on the axon; dendrite.hotkey is the caller.
+    responder_hotkey = None
+    if getattr(response, "axon", None) is not None:
+        responder_hotkey = getattr(response.axon, "hotkey", None)
+    if responder_hotkey is None and response.dendrite is not None:
+        responder_hotkey = getattr(response.dendrite, "hotkey", None)
+
+    if responder_hotkey is None:
+        bt.logging.debug("Response missing responder hotkey, rejecting")
         return False
 
-    if response.dendrite.hotkey != expected_hotkey:
+    if responder_hotkey != expected_hotkey:
         bt.logging.warning(
             f"Response hotkey mismatch: expected {expected_hotkey}, "
-            f"got {response.dendrite.hotkey}. Rejecting."
+            f"got {responder_hotkey}. Rejecting."
         )
         return False
 

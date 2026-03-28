@@ -343,6 +343,14 @@ class Miner(BaseMinerNeuron):
         except ValueError:
             return 0.0
 
+def sync(self):
+    """
+    Miner-specific sync: never calls set_weights (that's validator-only).
+    """
+    self.check_registered()
+    if self.should_sync_metagraph():
+        self.resync_metagraph()
+    self.save_state()
 
 # Entry point
 if __name__ == "__main__":
