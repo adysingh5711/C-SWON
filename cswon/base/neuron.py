@@ -121,7 +121,11 @@ class BaseNeuron(ABC):
         Wrapper for synchronizing the state of the network for the given miner or validator.
         """
         # Ensure miner or validator hotkey is still registered on the network.
-        self.check_registered()
+        try:
+            self.check_registered()
+        except Exception as e:
+            bt.logging.warning(f"check_registered failed: {e}. Continuing on local devnet.")
+            return
 
         if self.should_sync_metagraph():
             self.resync_metagraph()
@@ -139,8 +143,8 @@ class BaseNeuron(ABC):
             hotkey_ss58=self.wallet.hotkey.ss58_address,
         ):
             bt.logging.error(
-                f"Wallet: {self.wallet} is not registered on netuid {self.config.netuid}."
-                f" Please register the hotkey using `btcli subnets register` before trying again"
+                f"Wallet: {self.wallet} is not registered on netuid "
+                f"{self.config.netuid}. Please register before proceeding."
             )
             exit()
 

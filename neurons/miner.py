@@ -58,6 +58,7 @@ class Miner(BaseMinerNeuron):
         super(Miner, self).__init__(config=config)
         # Subnet profiler: tracks historical cost/latency per partner subnet (readme §3.6)
         self.profiler = SubnetProfiler()
+        bt.logging.info(f"Neuron path: {self.config.full_path}")
         bt.logging.info("C-SWON Miner initialised")
 
     async def forward(
@@ -345,7 +346,10 @@ class Miner(BaseMinerNeuron):
 
 # Entry point
 if __name__ == "__main__":
-    with Miner() as miner:
-        while True:
+    miner = Miner()
+    # run() handles sync + serve + axon.start internally in background thread
+    with miner:
+        # Keep main thread alive
+        while not miner.should_exit:
             bt.logging.info(f"C-SWON Miner running... block={miner.block}")
-            time.sleep(5)
+            time.sleep(15)

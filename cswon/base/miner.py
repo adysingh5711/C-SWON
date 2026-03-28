@@ -91,7 +91,12 @@ class BaseMinerNeuron(BaseNeuron):
             blacklist_fn=self.blacklist,
             priority_fn=self.priority,
         )
-        bt.logging.info(f"Axon created: {self.axon}")
+        
+        bt.logging.info(
+            f"Axon created with synapses: "
+            f"{[type(s).__name__ for s in self.axon.forward_class_types]}"
+        )
+        bt.logging.info(f"Axon details: {self.axon}")
 
         # Instantiate runners
         self.should_exit: bool = False
@@ -122,13 +127,17 @@ class BaseMinerNeuron(BaseNeuron):
             Exception: For unforeseen errors during the miner's operation, which are logged for diagnosis.
         """
 
-        # Check that miner is registered on the network.
-        self.sync()
+        # Check registration with a timeout guard
+        try:
+            self.sync()
+        except Exception as e:
+            bt.logging.warning(f"Initial sync failed (non-fatal on local devnet): {e}")
 
         # Serve passes the axon information to the network + netuid we are hosting on.
         # This will auto-update if the axon port of external ip have changed.
         bt.logging.info(
-            f"Serving miner axon {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
+            f"Serving miner axon {self.axon} on network: "
+            f"{self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
         )
         self.subtensor.serve_axon(
             netuid=self.config.netuid,
@@ -137,9 +146,8 @@ class BaseMinerNeuron(BaseNeuron):
             wait_for_finalization=False,
         )
 
-        # Start  starts the miner's axon, making it active on the network.
+        # Start starts the miner's axon, making it active on the network.
         self.axon.start()
-
         bt.logging.info(f"Miner starting at block: {self.block}")
 
         # This loop maintains the miner's operations until intentionally stopped.
