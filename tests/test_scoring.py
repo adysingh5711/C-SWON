@@ -269,3 +269,23 @@ class TestLCSF1:
     def test_empty_strings(self):
         assert _lcs_f1("", "hello") == 0.0
         assert _lcs_f1("hello", "") == 0.0
+
+
+class TestScoringVersionCompat:
+    """Validators must tolerate one scoring version behind (CLAUDE.md rule)."""
+
+    def test_version_one_behind_still_scores(self):
+        """A miner with scoring_version='0.9.0' should still be scorable."""
+        result = compute_composite_score(
+            output_quality=0.9,
+            completion_ratio=1.0,
+            actual_cost=0.01,
+            max_budget=0.05,
+            actual_latency=2.0,
+            max_latency=10.0,
+            unplanned_retries=0,
+            timeouts=0,
+            hard_failures=0,
+        )
+        assert result["S_composite"] > 0.0
+        assert result["S_success"] == pytest.approx(0.9)
