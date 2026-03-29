@@ -229,13 +229,11 @@ class BaseValidatorNeuron(BaseNeuron):
                 )
             except Exception as e:
                 bt.logging.error(f"Failed to serve Axon with exception: {e}")
-                pass
 
         except Exception as e:
             bt.logging.error(
                 f"Failed to create Axon initialize with exception: {e}"
             )
-            pass
 
     async def concurrent_forward(self):
         coroutines = [
@@ -441,8 +439,13 @@ class BaseValidatorNeuron(BaseNeuron):
         # Prevents premature weight submission after a restart.
         chain_last = int(self.metagraph.last_update[self.uid])
         last_update = max(chain_last, self._last_set_block)
+        # Bypass TTL cache for weight submission timing (testnet_fixes §3.6)
+        try:
+            fresh_block = self.subtensor.get_current_block()
+        except Exception:
+            fresh_block = self.block
         return ws.should_set_weights(
-            current_block=self.block,
+            current_block=fresh_block,
             last_set_block=last_update,
             subtensor=self.subtensor,
             netuid=self.config.netuid,
