@@ -24,6 +24,7 @@ executes them in a sandbox, scores results, and submits weights.
 Run: python neurons/validator.py --netuid <netuid> --wallet.name <name> --subtensor.network <test|finney>
 """
 
+import os as _os
 import time
 import sys
 import signal
@@ -45,6 +46,15 @@ class Validator(BaseValidatorNeuron):
     """
 
     def __init__(self, config=None):
+        # Propagate network for forward.py salt validation (testnet_fixes §1.3)
+        if config is None:
+            _cfg = self.__class__.config()
+        else:
+            _cfg = config
+        _os.environ.setdefault(
+            "CSWON_NETWORK",
+            getattr(getattr(_cfg, "subtensor", None), "network", "local"),
+        )
         super(Validator, self).__init__(config=config)
 
         # Initialise the score aggregator BEFORE load_state() so restored data

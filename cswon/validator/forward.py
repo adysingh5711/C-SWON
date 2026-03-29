@@ -66,8 +66,8 @@ _SYNTHETIC_SALT = os.environ.get("CSWON_SYNTHETIC_SALT", "")
 
 if not _SYNTHETIC_SALT:
     _is_mock_mode = os.environ.get("CSWON_MOCK_EXEC", "true").lower() == "true"
+    _network = os.environ.get("CSWON_NETWORK", "local")
     if not _is_mock_mode:
-        # Live validator with no salt — fail immediately, loud and clear
         raise RuntimeError(
             "\n\nCRITICAL: CSWON_SYNTHETIC_SALT env var is not set.\n"
             "Running a live validator without a secret salt means miners can\n"
@@ -77,13 +77,23 @@ if not _SYNTHETIC_SALT:
             "Then set it in your environment:\n"
             "  export CSWON_SYNTHETIC_SALT=<your-secret-value>\n"
         )
+    elif _network == "test":
+        raise RuntimeError(
+            "\n\nCRITICAL: CSWON_SYNTHETIC_SALT env var is not set.\n"
+            "Testnet validators require a persistent salt for consistent\n"
+            "synthetic task derivation across restarts and validators.\n\n"
+            "Generate a secret salt with:\n"
+            "  python -c \"import secrets; print(secrets.token_hex(32))\"\n\n"
+            "Then set it in your environment:\n"
+            "  export CSWON_SYNTHETIC_SALT=<your-secret-value>\n"
+        )
     else:
-        # Testnet / mock mode: use a random ephemeral salt for this session
+        # Local devnet: ephemeral salt is acceptable
         import secrets as _secrets
         _SYNTHETIC_SALT = _secrets.token_hex(32)
         bt.logging.warning(
             "CSWON_SYNTHETIC_SALT not set — using ephemeral random salt for this "
-            "mock/testnet session. Set the env var for stable cross-restart behavior."
+            "local devnet session. Set the env var for stable cross-restart behavior."
         )
 
 # ── Temporal Consistency Constants (readme §2.5, issue 1.5) ─────────────────
