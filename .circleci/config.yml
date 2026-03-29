@@ -125,6 +125,12 @@ jobs:
             . env/bin/activate
             pip install -e .
 
+      - run:
+          name: Run tests
+          command: |
+            . env/bin/activate
+            CSWON_MOCK_EXEC=true pytest tests/ -v --tb=short
+
       - store_test_results:
           path: test-results
       - store_artifacts:
