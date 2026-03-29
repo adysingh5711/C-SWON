@@ -2,18 +2,77 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { seoConfig } from "@/lib/seo.config";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "C-SWON — Cross-Subnet Workflow Orchestration",
-  description: "Zapier for Subnets — The Intelligence Layer for Multi-Subnet Composition",
+  title: {
+    default: seoConfig.title,
+    template: `%s | ${seoConfig.title}`,
+  },
+  description: seoConfig.description,
+  metadataBase: new URL(seoConfig.canonical),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    ...seoConfig.openGraph,
+    images: [
+      {
+        url: "/images/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "C-SWON — Zapier for Subnets",
+      },
+    ],
+  },
+  twitter: seoConfig.twitter,
+  icons: {
+    icon: [
+      { url: "/images/favicon.ico" },
+      { url: "/images/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/images/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/images/site.webmanifest",
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "C-SWON",
+  "description": "Cross-Subnet Workflow Orchestration Network for Bittensor.",
+  "applicationCategory": "BlockchainApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "C-SWON Network",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://cswon.vercel.app/images/web-app-manifest-512x512.png"
+    }
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Nav />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
