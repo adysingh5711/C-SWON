@@ -71,7 +71,58 @@ By default, subnets don't emit until activated. If testing emissions, start the 
 btcli subnet start --netuid <netuid> --network test
 ```
 
+## 5.1 Disable Commit-Reveal Weights
+
+Testnet defaults to `commit_reveal_weights_enabled=true`, which causes `Transaction has a bad signature` errors on weight submission. Disable it:
+
+```bash
+btcli sudo set --netuid <netuid> --param commit_reveal_weights_enabled --value false --network test --wallet.name owner
+```
+
+Verify:
+```bash
+btcli sudo get --netuid <netuid> --network test | grep commit_reveal
+```
+
+Expected: `commit_reveal_weights_enabled: False`
+
+## 5.2 Configure Subnet Hyperparameters (Recommended)
+
+For faster iteration on testnet, adjust these hyperparameters:
+
+```bash
+# Lower tempo for faster weight updates (default 360 → 60)
+btcli sudo set --netuid <netuid> --param tempo --value 60 --network test --wallet.name owner
+
+# Match weights_rate_limit to tempo
+btcli sudo set --netuid <netuid> --param weights_set_rate_limit --value 60 --network test --wallet.name owner
+
+# Lower immunity period for faster miner turnover
+btcli sudo set --netuid <netuid> --param immunity_period --value 500 --network test --wallet.name owner
+
+# If only 1-2 miners, lower min_allowed_weights
+btcli sudo set --netuid <netuid> --param min_allowed_weights --value 1 --network test --wallet.name owner
+```
+
+> **Weight submission cadence:** The validator submits weights every `max(tempo, weights_rate_limit)` blocks. With defaults (tempo=360, rate_limit=100), weights submit every 360 blocks (~72 min). With the recommended settings above, every 60 blocks (~12 min).
+
+## 5.3 Enable Emissions (Root Subnet Registration)
+
+For emissions to flow to your subnet, register on the root network and set root weights:
+
+```bash
+btcli root register --subtensor.network test --wallet.name owner
+btcli root weights --subtensor.network test --wallet.name owner
+```
+
+Without this step, your subnet will have zero emissions even after staking.
+
 ## 6. Run the C-SWON Subnet
+
+> **CLI flag conventions:**
+> - `btcli` commands use `--network test` (chain-level flag)
+> - Neuron scripts (`neurons/validator.py`, `neurons/miner.py`) use `--subtensor.network test` (SDK-level flag)
+> - These are different CLI frameworks and are NOT interchangeable
 
 Navigate to your C-SWON local repository, ensure dependencies are installed (`pip install -r requirements.txt` and `pip install -e .`), and launch the nodes:
 
