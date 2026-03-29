@@ -43,6 +43,9 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/images/site.webmanifest",
+  verification: {
+    google: "WnaeKbRB9LIW77kvZTKfbOwFX24eDJApdNn78nZvksc",
+  },
 };
 
 const jsonLd = {

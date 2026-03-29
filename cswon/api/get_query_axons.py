@@ -115,10 +115,13 @@ async def get_query_api_axons(
     Returns:
         list: A list of axon objects for the available API nodes.
     """
-    dendrite = bt.Dendrite(wallet=wallet)
-
     if metagraph is None:
-        metagraph = bt.Metagraph(netuid=21)
+        raise ValueError(
+            "metagraph must be provided — no hardcoded netuid fallback. "
+            "Pass the metagraph from your validator/miner instance."
+        )
+
+    dendrite = bt.Dendrite(wallet=wallet)
 
     if uids is not None:
         query_uids = [uids] if isinstance(uids, int) else uids
