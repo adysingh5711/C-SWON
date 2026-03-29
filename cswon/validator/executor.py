@@ -607,6 +607,15 @@ async def execute_workflow_async(
     if mock_mode is None:
         mock_mode = os.environ.get("CSWON_MOCK_EXEC", "true").lower() == "true"
 
+    # Testnet guard: warn if mock mode is disabled on testnet
+    _network = os.environ.get("CSWON_NETWORK", "local")
+    if not mock_mode and _network == "test":
+        bt.logging.warning(
+            "CSWON_MOCK_EXEC=false on testnet — Docker executor is untested. "
+            "Set CSWON_MOCK_EXEC=true for testnet MVP. Forcing mock mode."
+        )
+        mock_mode = True
+
     if routing_policy is None:
         routing_policy = {}
 
