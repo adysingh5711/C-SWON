@@ -1,3 +1,11 @@
+"""
+Mainnet subnet name to GitHub URL mapping.
+
+WARNING: These netuid-to-name mappings are for MAINNET only. On testnet,
+netuids map to different subnets. In mock mode (CSWON_MOCK_EXEC=true),
+these links are used only for logging — no real cross-subnet calls are made.
+"""
+
 SUBNET_LINKS = [
     {"name": "sn0", "url": ""},
     {"name": "sn1", "url": "https://github.com/opentensor/prompting/"},
