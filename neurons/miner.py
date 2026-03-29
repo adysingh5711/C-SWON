@@ -147,6 +147,23 @@ class Miner(BaseMinerNeuron):
             gnodes, gedges, gerr = self._generic_pipeline(synapse.description, available_tools, list(allowed_subnets))
             return {"nodes": gnodes, "edges": gedges, "error_handling": gerr}
 
+        # Cap nodes at MAX_NODES (validator rejects plans exceeding this)
+        MAX_NODES = 10
+        if len(nodes) > MAX_NODES:
+            bt.logging.warning(
+                f"Workflow has {len(nodes)} nodes, capping at {MAX_NODES}"
+            )
+            nodes = nodes[:MAX_NODES]
+            retained_ids = {n["id"] for n in nodes}
+            edges = [
+                e for e in edges
+                if e["from"] in retained_ids and e["to"] in retained_ids
+            ]
+            error_handling = {
+                k: v for k, v in error_handling.items()
+                if k in retained_ids
+            }
+
         return {"nodes": nodes, "edges": edges, "error_handling": error_handling}
 
     def _infer_required_capabilities(self, desc: str) -> list:
