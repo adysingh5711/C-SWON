@@ -77,6 +77,25 @@ class Validator(BaseValidatorNeuron):
         On local devnets with few UIDs, all nodes may receive validator_permit.
         Fall back to checking for any serving non-self UID in that case.
         """
+        # Validate benchmark file exists and has correct schema
+        from cswon.validator.config import BENCHMARK_PATH
+        from cswon.validator.miner_selection import load_benchmark_tasks
+        import os
+        if not os.path.exists(BENCHMARK_PATH):
+            raise RuntimeError(
+                f"Benchmark file not found at {BENCHMARK_PATH}. "
+                f"Ensure benchmarks/v1.json exists before starting the validator."
+            )
+        try:
+            tasks = load_benchmark_tasks(BENCHMARK_PATH)
+            bt.logging.info(
+                f"Benchmark preflight passed: {len(tasks)} valid tasks loaded."
+            )
+        except (ValueError, FileNotFoundError) as e:
+            raise RuntimeError(
+                f"Benchmark file validation failed: {e}"
+            ) from e
+
         serving_miners = [
             uid
             for uid in range(int(self.metagraph.n))
