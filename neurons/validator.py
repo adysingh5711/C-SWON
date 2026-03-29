@@ -117,9 +117,32 @@ class Validator(BaseValidatorNeuron):
                     f"Treating serving non-self UIDs as miners: {serving_miners}"
                 )
         if not serving_miners:
-            raise RuntimeError(
-                "No serving miners found on subnet; start at least one miner before validator."
-            )
+            max_retries = 5
+            retry_delay = 30
+            for attempt in range(1, max_retries + 1):
+                bt.logging.warning(
+                    f"No serving miners found (attempt {attempt}/{max_retries}). "
+                    f"Retrying in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+                self.metagraph.sync(subtensor=self.subtensor)
+                serving_miners = [
+                    uid
+                    for uid in range(int(self.metagraph.n))
+                    if self.metagraph.axons[uid].is_serving
+                    and uid != self.uid
+                ]
+                if serving_miners:
+                    bt.logging.info(
+                        f"Found {len(serving_miners)} serving miners after retry."
+                    )
+                    break
+            else:
+                raise RuntimeError(
+                    f"No serving miners found after {max_retries} retries "
+                    f"({max_retries * retry_delay}s). Start at least one miner "
+                    f"before the validator."
+                )
 
     async def forward(self):
         """
