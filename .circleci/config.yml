@@ -64,7 +64,7 @@ jobs:
           name: Pylint check
           command: |
             . env/bin/activate
-            pylint --fail-on=W,E,F --exit-zero  ./
+            pylint --fail-on=E,F --disable=C,R ./cswon/ ./neurons/
 
   check_compatibility:
     parameters:
