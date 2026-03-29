@@ -5,22 +5,29 @@ from typing import List
 
 
 def check_uid_availability(
-    metagraph: "bt.Metagraph.Metagraph", uid: int, vpermit_tao_limit: int
+    metagraph: "bt.Metagraph.Metagraph", uid: int, validator_stake_threshold: int
 ) -> bool:
-    """Check if uid is available. The UID should be available if it is serving and has less than vpermit_tao_limit stake
+    """Check if uid is available for querying as a miner.
+
+    A UID is unavailable if it is not serving, or if it holds a validator
+    permit with stake exceeding *validator_stake_threshold* (indicating
+    it is acting as a validator, not a miner).
+
     Args:
-        metagraph (:obj: bt.Metagraph.Metagraph): Metagraph object
-        uid (int): uid to be checked
-        vpermit_tao_limit (int): Validator permit tao limit
+        metagraph: Metagraph object.
+        uid: UID to check.
+        validator_stake_threshold: Stake above which a validator-permit
+            holder is considered a validator (not a miner) and excluded.
+
     Returns:
-        bool: True if uid is available, False otherwise
+        True if the UID is available for miner queries.
     """
     # Filter non serving axons.
     if not metagraph.axons[uid].is_serving:
         return False
-    # Filter validator permit > 1024 stake.
+    # Filter high-stake validators — they are not miners.
     if metagraph.validator_permit[uid]:
-        if metagraph.S[uid] > vpermit_tao_limit:
+        if metagraph.S[uid] > validator_stake_threshold:
             return False
     # Available otherwise.
     return True
@@ -51,12 +58,17 @@ def get_random_uids(self, k: int, exclude: List[int] = None) -> np.ndarray:
                 candidate_uids.append(uid)
     # If k is larger than the number of available uids, set k to the number of available uids.
     k = min(k, len(avail_uids))
-    # Check if candidate_uids contain enough for querying, if not grab all avaliable uids
+    # Check if candidate_uids contain enough for querying, if not grab all available uids
     available_uids = candidate_uids
     if len(candidate_uids) < k:
+        fallback_count = k - len(candidate_uids)
+        bt.logging.warning(
+            f"Not enough candidate UIDs ({len(candidate_uids)}/{k}). "
+            f"Falling back to {fallback_count} previously-excluded UIDs."
+        )
         available_uids += random.sample(
             [uid for uid in avail_uids if uid not in candidate_uids],
-            k - len(candidate_uids),
+            fallback_count,
         )
     uids = np.array(random.sample(available_uids, k))
     return uids

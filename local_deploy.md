@@ -15,6 +15,7 @@ addresses, and fixed subnet IDs.
 | Python | 3.10+ | `python3 --version` |
 | Docker | recent | `docker --version` |
 | Git | any recent | `git --version` |
+| pip packages | bittensor 10.x, bittensor-cli, bittensor-wallet | `pip list \| grep bittensor` |
 
 ---
 
@@ -29,6 +30,7 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 pip install -e .
+pip install pexpect   # needed for automated btcli password handling
 ```
 
 Verify the install:
@@ -37,12 +39,6 @@ Verify the install:
 python -c "import cswon; print(cswon.__version__)"
 btcli --version
 python -c "import bittensor; print(bittensor.__version__)"
-```
-
-If `btcli` is missing after activation:
-
-```bash
-pip install bittensor
 ```
 
 ---
@@ -63,27 +59,10 @@ print(open('.env').read())
 "
 ```
 
-Keep it out of git:
-
-```bash
-echo ".env" >> .gitignore
-```
-
-Verify the environment:
+Load it in every terminal session:
 
 ```bash
 set -a && source .env && set +a
-
-python - <<'PY'
-import os
-salt = os.environ.get("CSWON_SYNTHETIC_SALT", "")
-mock = os.environ.get("CSWON_MOCK_EXEC", "")
-exp = os.environ.get("CSWON_ENABLE_EXPERIMENTAL_EXEC", "NOT SET")
-assert mock == "true", f"CSWON_MOCK_EXEC must be 'true', got: '{mock}'"
-assert len(salt) == 64, f"CSWON_SYNTHETIC_SALT must be 64 hex chars, got len={len(salt)}"
-assert exp == "NOT SET", f"CSWON_ENABLE_EXPERIMENTAL_EXEC must be unset, got: '{exp}'"
-print("OK: environment is correctly configured for local deployment")
-PY
 ```
 
 ---
@@ -108,39 +87,24 @@ If the container already exists:
 docker start local_chain
 ```
 
-Wait for the node to become ready:
+> **Warning:** `docker restart local_chain` resets all chain state (wallets, subnets, registrations, stake). You will need to redo Steps 5-8.
+
+Wait for block production:
 
 ```bash
-docker logs -f local_chain
+docker logs -f local_chain   # Ctrl-C once you see blocks
 ```
 
-You want to see normal block production before proceeding.
+**Two endpoints:**
 
-Verify the chain is reachable:
-
-```bash
-btcli subnet list --network ws://127.0.0.1:9944
-```
-
-Notes:
-
-- Do not use `--rm` when creating `local_chain`.
-- Use `ws://127.0.0.1:9944` for subnet queries and neuron traffic.
-- Use `ws://127.0.0.1:9945` for wallet operations.
+| Port | Use for |
+| --- | --- |
+| `ws://127.0.0.1:9944` | Subnet queries, neuron traffic, metagraph |
+| `ws://127.0.0.1:9945` | Wallet operations (transfer, stake, register, subnet create) |
 
 ---
 
-## Step 4 — Create or inspect wallets
-
-Start every new terminal session like this:
-
-```bash
-cd C-SWON
-source .venv/bin/activate
-set -a && source .env && set +a
-```
-
-If the wallets do not exist yet, create them:
+## Step 4 — Create wallets
 
 ```bash
 btcli wallet new_coldkey --wallet.name owner
@@ -153,24 +117,7 @@ btcli wallet new_coldkey --wallet.name miner
 btcli wallet new_hotkey  --wallet.name miner --wallet.hotkey default
 ```
 
-Wallets live under `~/.bittensor/wallets` and persist across sessions.
-
-Inspect addresses:
-
-```bash
-python - <<'PY'
-import bittensor as bt
-for name in ["owner", "vali", "miner"]:
-    w = bt.Wallet(name=name)
-    print(f"{name}: coldkey={w.coldkeypub.ss58_address} hotkey={w.hotkey.ss58_address}")
-PY
-```
-
----
-
-## Step 5 — Fund wallets with local TAO
-
-Import Alice on localnet:
+Also import Alice (the dev faucet with 1M TAO):
 
 ```bash
 btcli wallet regen_coldkey \
@@ -179,186 +126,223 @@ btcli wallet regen_coldkey \
   --network ws://127.0.0.1:9945
 ```
 
-Check Alice's balance:
+---
 
-```bash
-btcli wallet balance --wallet.name alice --network ws://127.0.0.1:9945
-```
+## Step 5 — Fund wallets
 
-Transfer funds from Alice to your wallets:
+Use btcli to transfer from Alice to each wallet:
 
 ```bash
 btcli wallet transfer \
   --wallet.name alice \
   --destination <owner-coldkey> \
   --network ws://127.0.0.1:9945
+# Enter amount: 100000
 
 btcli wallet transfer \
   --wallet.name alice \
   --destination <vali-coldkey> \
   --network ws://127.0.0.1:9945
+# Enter amount: 100000
 
 btcli wallet transfer \
   --wallet.name alice \
   --destination <miner-coldkey> \
   --network ws://127.0.0.1:9945
+# Enter amount: 100000
 ```
 
-Use a reasonable local amount such as `1000` when prompted.
+**Alternative (SDK):** If btcli prompts are problematic, use a Python script with `AsyncSubstrateInterface` and Alice's unencrypted keypair:
 
-Verify balances:
+```python
+from bittensor_wallet import Wallet
+from async_substrate_interface import AsyncSubstrateInterface
+import asyncio
 
-```bash
-btcli wallet balance --wallet.name alice --network ws://127.0.0.1:9945
-btcli wallet balance --wallet.name owner --network ws://127.0.0.1:9945
-btcli wallet balance --wallet.name vali  --network ws://127.0.0.1:9945
-btcli wallet balance --wallet.name miner --network ws://127.0.0.1:9945
+async def fund():
+    alice = Wallet(name='alice', path='~/.bittensor/wallets')
+    sub = AsyncSubstrateInterface(url='ws://127.0.0.1:9945')
+    await sub.initialize()
+    for addr in ["<owner-coldkey>", "<vali-coldkey>", "<miner-coldkey>"]:
+        call = await sub.compose_call(
+            call_module='Balances',
+            call_function='transfer_keep_alive',
+            call_params={'dest': addr, 'value': 100_000 * 10**9},
+        )
+        ext = await sub.create_signed_extrinsic(call=call, keypair=alice.coldkey)
+        receipt = await sub.submit_extrinsic(ext, wait_for_inclusion=True)
+        print(f'{addr}: {await receipt.is_success}')
+    await sub.close()
+
+asyncio.run(fund())
 ```
 
 ---
 
-## Step 6 — Create or reuse a subnet
-
-Inspect current subnets:
-
-```bash
-btcli subnet list --network ws://127.0.0.1:9944
-```
-
-If you already own a local subnet, reuse its `netuid` and export it:
-
-```bash
-export NETUID=<netuid>
-```
-
-If you need a fresh one:
+## Step 6 — Create subnet
 
 ```bash
 btcli subnet create \
   --network ws://127.0.0.1:9945 \
-  --wallet.name owner \
-  --wallet.hotkey default \
+  --wallet-name owner \
+  --hotkey default \
   --no-mev-protection
 ```
 
-Then export the created subnet ID:
+> The `--no-mev-protection` flag is required on local chains; MEV Shield fails on devnet.
+
+Note the netuid from the output (usually 2) and export it:
 
 ```bash
-export NETUID=<netuid>
+export NETUID=2
 ```
 
-If needed, start emissions:
+**Start emissions** (required before staking works):
 
 ```bash
 btcli subnet start \
   --network ws://127.0.0.1:9945 \
-  --wallet.name owner \
+  --wallet-name owner \
   --netuid "$NETUID"
-```
-
-Verify the subnet exists:
-
-```bash
-btcli subnet list --network ws://127.0.0.1:9944
 ```
 
 ---
 
-## Step 7 — Register validator and miner
+## Step 7 — Configure chain hyperparameters
 
-Register both wallets on the subnet:
+The devnet chain ships with defaults that break local testing. Fix them using Alice's sudo key via the SDK:
 
-```bash
-btcli subnets register \
-  --network ws://127.0.0.1:9945 \
-  --netuid "$NETUID" \
-  --wallet.name vali \
-  --wallet.hotkey default
+```python
+import asyncio
+from bittensor_wallet import Wallet
+from async_substrate_interface import AsyncSubstrateInterface
 
-btcli subnets register \
-  --network ws://127.0.0.1:9945 \
-  --netuid "$NETUID" \
-  --wallet.name miner \
-  --wallet.hotkey default
+async def configure():
+    alice = Wallet(name='alice', path='~/.bittensor/wallets')
+    owner = Wallet(name='owner', path='~/.bittensor/wallets')
+    owner_kp = owner.get_coldkey(password='<your-password>')
+
+    sub = AsyncSubstrateInterface(url='ws://127.0.0.1:9945')
+    await sub.initialize()
+
+    # 1. Disable commit-reveal (causes bad-signature on devnet)
+    for attempt in range(5):
+        call = await sub.compose_call(
+            call_module='AdminUtils',
+            call_function='sudo_set_commit_reveal_weights_enabled',
+            call_params={'netuid': 2, 'enabled': False},
+        )
+        ext = await sub.create_signed_extrinsic(call=call, keypair=owner_kp)
+        receipt = await sub.submit_extrinsic(ext, wait_for_inclusion=True)
+        ok = await receipt.is_success
+        if ok:
+            print('commit_reveal disabled')
+            break
+        err = await receipt.error_message
+        if 'WeightsWindow' in str(err):
+            await asyncio.sleep(12)  # wait for window to close
+        else:
+            print(f'Failed: {err}')
+            break
+
+    # 2. Set weights_rate_limit = tempo (requires Alice sudo)
+    for fname, params in [
+        ('sudo_set_weights_set_rate_limit', {'netuid': 2, 'weights_set_rate_limit': 10}),
+    ]:
+        inner = await sub.compose_call(call_module='AdminUtils', call_function=fname, call_params=params)
+        sudo = await sub.compose_call(call_module='Sudo', call_function='sudo', call_params={'call': inner})
+        ext = await sub.create_signed_extrinsic(call=sudo, keypair=alice.coldkey)
+        receipt = await sub.submit_extrinsic(ext, wait_for_inclusion=True)
+        print(f'{fname}: {await receipt.is_success}')
+
+    await sub.close()
+
+asyncio.run(configure())
 ```
 
-Stake the validator so it can set weights:
+**Why these changes are needed:**
+
+| Parameter | Default | Required | Reason |
+| --- | --- | --- | --- |
+| `commit_reveal_weights_enabled` | `true` | `false` | Commit-reveal timelocked weights produce "bad signature" on devnet |
+| `weights_rate_limit` | `100` | `10` (= tempo) | Default is 10x the tempo; validator can only set weights every 100 blocks instead of every tempo |
+
+**Verify:**
 
 ```bash
+python -c "
+import bittensor as bt
+hp = bt.Subtensor(network='ws://127.0.0.1:9944').get_subnet_hyperparameters(netuid=2)
+print(f'commit_reveal={hp.commit_reveal_weights_enabled}')
+print(f'weights_rate_limit={hp.weights_rate_limit}')
+print(f'tempo={hp.tempo}')
+"
+```
+
+Expected: `commit_reveal=False`, `weights_rate_limit=10`, `tempo=10`.
+
+---
+
+## Step 8 — Register and stake
+
+```bash
+# Register validator
+btcli subnets register \
+  --network ws://127.0.0.1:9945 \
+  --netuid "$NETUID" \
+  --wallet-name vali \
+  --hotkey default \
+  --no-prompt
+
+# Register miner
+btcli subnets register \
+  --network ws://127.0.0.1:9945 \
+  --netuid "$NETUID" \
+  --wallet-name miner \
+  --hotkey default \
+  --no-prompt
+
+# Stake validator (use port 9945, small amount to avoid slippage)
 btcli stake add \
   --network ws://127.0.0.1:9945 \
-  --wallet.name vali \
-  --wallet.hotkey default \
+  --wallet-name vali \
+  --hotkey default \
   --amount 100 \
   --no-mev-protection \
   --tolerance 1.0
+# When prompted for netuid, enter your NETUID (e.g. 2)
 ```
 
-Verify registration state:
+> **Slippage:** On a fresh chain the AMM pool is small. Stake 100 TAO first; larger amounts fail with `SlippageTooHigh`. The pool grows over time.
+
+> **`subnet start` must be done first** (Step 6). Without it, staking fails with `SubtokenDisabled`.
+
+Verify:
 
 ```bash
-btcli subnets metagraph \
-  --network ws://127.0.0.1:9944 \
-  --netuid "$NETUID"
+btcli subnet metagraph --netuid "$NETUID" --network ws://127.0.0.1:9944
 ```
 
-You should see the validator and miner on the chosen subnet.
+You should see the validator with non-zero stake and `vpermit=True`.
 
 ---
 
-## Step 8 — Verify the benchmark file
+## Step 9 — Resolve axon IP
 
 ```bash
-python - <<'PY'
-from cswon.validator.config import BENCHMARK_PATH
-import os, json
-assert os.path.exists(BENCHMARK_PATH), f"Missing: {BENCHMARK_PATH}"
-tasks = json.load(open(BENCHMARK_PATH))
-active = [t for t in tasks if t.get("status", "active") == "active"]
-print(f"OK: {len(active)} active benchmark tasks at {BENCHMARK_PATH}")
-for t in active:
-    print(f"  - {t['task_id']} ({t['task_type']})")
-PY
-```
-
-Expected active tasks:
-
-```text
-code_001
-rag_001
-agent_001
-data_001
-synthetic_001
-```
-
----
-
-## Step 9 — Prepare for launch
-
-Resolve a non-loopback axon IP for this machine:
-
-```bash
-export LOCAL_AXON_IP="$(python - <<'PY'
+export LOCAL_AXON_IP="$(python -c "
 from cswon.utils.hotkey_extrinsics import get_preferred_local_axon_ip
 ip = get_preferred_local_axon_ip()
 if ip is None:
-    raise SystemExit("Could not detect a non-loopback local IP. Set LOCAL_AXON_IP manually.")
+    raise SystemExit('Could not detect a non-loopback local IP. Set LOCAL_AXON_IP manually.')
 print(ip)
-PY
-)"
+")"
 echo "$LOCAL_AXON_IP"
-```
-
-Stop stale neuron processes before a clean restart:
-
-```bash
-ps -ax -o pid=,command= | rg 'neurons/(miner|validator)\.py'
-kill <pid_1> <pid_2> ...
 ```
 
 ---
 
-## Step 10 — Start the miner
+## Step 10 — Start the miner (first)
 
 Always start the miner before the validator.
 
@@ -376,15 +360,9 @@ python neurons/miner.py \
   --wandb.off
 ```
 
-Healthy startup indicators:
-
-- The process stays alive.
-- The miner registers an axon on-chain.
-- The main process exits if the worker thread crashes instead of hanging.
-
 ---
 
-## Step 11 — Start the validator
+## Step 11 — Start the validator (separate terminal)
 
 ```bash
 python neurons/validator.py \
@@ -399,95 +377,37 @@ python neurons/validator.py \
   --wandb.off
 ```
 
-Healthy startup indicators:
-
-- The process stays alive.
-- It starts receiving valid miner responses.
-- It keeps updating local scoring state over time.
-
 ---
 
-## Step 12 — Post-launch verification
+## Step 12 — Verify operation
 
-Check live subnet hyperparameters:
-
-```bash
-python - <<'PY'
-import bittensor as bt
-import os
-subtensor = bt.Subtensor(network='ws://127.0.0.1:9944')
-params = subtensor.get_subnet_hyperparameters(int(os.environ["NETUID"]))
-for attr in ["tempo", "weights_rate_limit", "max_validators", "immunity_period"]:
-    print(attr, getattr(params, attr, None))
-PY
-```
-
-Inspect current axon registrations:
-
-```bash
-python - <<'PY'
-import bittensor as bt
-import os
-subtensor = bt.Subtensor(network='ws://127.0.0.1:9944')
-metagraph = subtensor.metagraph(int(os.environ["NETUID"]))
-for name in ["vali", "miner"]:
-    wallet = bt.Wallet(name=name)
-    uid = metagraph.hotkeys.index(wallet.hotkey.ss58_address)
-    axon = metagraph.axons[uid]
-    print(name, axon.ip, axon.port, bool(axon.is_serving))
-PY
-```
-
-Inspect validator scoring state:
-
-```bash
-sed -n '1,200p' ~/.bittensor/neurons/vali/default/netuid${NETUID}/validator/score_aggregator.json
-```
-
----
-
-## What correct operation looks like
-
-Typical miner logs:
+**Check scoring in validator logs:**
 
 ```text
-Received task: code_001 type=code
-Returning workflow plan for code_001: 1 nodes, est_cost=0.0010τ
-```
-
-Typical validator logs:
-
-```text
-Selected task: rag_001 type=rag synthetic=False at block 45
+Selected task: data_001 type=data_transform synthetic=False at block 1234
 Received 1 responses from 1 miners
 Validated 1 responses
+Scored 1 miners: mean=0.9500
+Miner 2: S=0.9500 (success=1.000, cost=0.800, latency=1.000, reliability=1.000)
 ```
 
-Typical weight-setting log:
+**Check weight submission:**
 
 ```text
 set_weights on chain successfully!
 ```
 
----
+**Check emissions:**
 
-## Restart survival tests
-
-Validator restart check:
-
-```bash
-# Stop and restart the validator.
-# Confirm it restores local state and continues scoring.
+```python
+import bittensor as bt
+s = bt.Subtensor(network='ws://127.0.0.1:9944')
+mg = s.metagraph(netuid=2)
+for i in range(int(mg.n)):
+    print(f'UID {i}: stake={mg.S[i]:.2f} incentive={mg.I[i]:.4f} dividend={mg.D[i]:.4f} vtrust={mg.validator_trust[i]:.4f}')
 ```
 
-Miner restart check:
-
-```bash
-# Stop and restart the miner.
-# Confirm the validator resumes getting valid responses.
-```
-
-Run both before promoting the flow to testnet.
+Expected: validator has `dividend=1.0, vtrust=1.0`; miner has `incentive=1.0`.
 
 ---
 
@@ -495,22 +415,26 @@ Run both before promoting the flow to testnet.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `docker: No such image` | Wrong image name | Use `ghcr.io/opentensor/subtensor-localnet:devnet-ready` |
-| `docker: container name already in use` | Container already exists | Use `docker start local_chain` |
-| `Connection refused ws://127.0.0.1:9944` | Chain not running | Start or restart `local_chain` |
-| `wallet not found` | Wallet files missing | Create or import the wallet first |
-| `No benchmark tasks loaded` | Benchmark file missing or malformed | Re-run Step 8 |
-| `No serving miners found` | Validator started before miner | Start miner first, then validator |
-| `set_weights failed` | Validator not staked enough | Re-run the validator stake command |
-| Validator sees `503 Service unavailable` | Miner axon IP is unreachable | Recompute `LOCAL_AXON_IP` and restart with explicit `--axon.external_ip "$LOCAL_AXON_IP"` |
-| `CSWON_SYNTHETIC_SALT not set` | `.env` not sourced | Re-run `set -a && source .env && set +a` |
-| `ModuleNotFoundError: cswon` | Package not installed | Run `pip install -e .` |
+| `Transaction has a bad signature` on set_weights | `commit_reveal_weights_enabled=true` | Run Step 7 to disable it |
+| `SubtokenDisabled` on staking | Subnet emissions not started | Run `btcli subnet start` (Step 6) |
+| `SlippageTooHigh` on staking | Amount too large for AMM pool | Stake smaller amount (50-100 TAO) |
+| `NeuronNoValidatorPermit` on set_weights | Validator has no stake / no vpermit | Complete Step 8 staking |
+| `No serving miners found` at validator start | Miner not started or not yet registered axon | Start miner first, wait 10s |
+| `No miners available to query` | All UIDs have vpermit + stake > 1024 | Code handles this on local chains automatically |
+| `ConcurrencyError: cannot call recv` | Websocket thread conflict | Fixed in code; don't call `self.block` from main thread |
+| `No valid responses received` | Miner forward() returning None fields | Verify miner process is alive and axon is serving |
+| `docker restart` lost all state | Devnet chain is ephemeral | Redo Steps 5-8 after any restart |
+| Scores all show `success=0.000` | Miner capability inference misses task keywords | Check `_infer_required_capabilities()` in `neurons/miner.py` |
+| `AdminActionProhibitedDuringWeightsWindow` | Admin call during protected window | Retry after 12 seconds |
+| `BadOrigin` on admin calls | Some params need root (Alice) sudo | Use `Sudo::sudo` wrapper with Alice keypair |
 
 ---
 
 ## Notes
 
-- `CSWON_MOCK_EXEC=true` is the correct local and staged-testnet setting.
+- `CSWON_MOCK_EXEC=true` is the correct local setting. No real subnet calls are made.
 - `CSWON_ENABLE_EXPERIMENTAL_EXEC` should remain unset.
-- Local fast blocks are short, so tempo boundaries arrive quickly compared with public networks.
-- Do not disable validator-permit enforcement unless you are doing isolated debugging.
+- The devnet chain has `tempo=10` (fast blocks). Tempo boundaries arrive every ~2 minutes.
+- On local chains, all UIDs may get `validator_permit=True` due to AMM staking. The code handles this automatically by treating all serving non-self UIDs as miners.
+- **SDK vs CLI usage:** Use btcli for wallet operations (create, transfer, register, stake). Use the Python SDK (`AsyncSubstrateInterface`) for chain config changes that btcli doesn't expose cleanly (commit-reveal, rate limits). Use `bittensor.Subtensor` for verification queries.
+- Wallet passwords: btcli prompts interactively. For automation, use `bittensor_wallet.Wallet.get_coldkey(password=...)` in Python scripts.

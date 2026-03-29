@@ -48,6 +48,8 @@ def score_output_quality(
     if output is None:
         return 0.0
 
+    task_type = (task_type or "").strip().lower()
+
     output_text = output.get("text", "")
     output_code = output.get("artifacts", {}).get("code", "")
 
@@ -251,10 +253,13 @@ def _score_data_transform_quality(output: dict, reference: dict) -> float:
         else:
             expected_parsed = expected_output
 
-        # Normalize: stringify all values for loose comparison
+        # Normalize for structural comparison — preserve types for values
+        # so that {"a": 1} and {"a": "1"} are not conflated.
         def _normalize(d):
             if isinstance(d, dict):
-                return {str(k): str(v) for k, v in d.items()}
+                return {str(k): _normalize(v) for k, v in sorted(d.items())}
+            if isinstance(d, list):
+                return [_normalize(v) for v in d]
             return d
 
         if _normalize(actual_parsed) == _normalize(expected_parsed):

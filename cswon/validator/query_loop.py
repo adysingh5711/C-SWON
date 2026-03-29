@@ -14,6 +14,7 @@ import bittensor as bt
 
 from cswon.protocol import WorkflowSynapse
 from cswon.validator.config import QUERY_TIMEOUT_S
+from cswon.utils.misc import get_hotkey
 
 
 async def query_miners(
@@ -154,11 +155,10 @@ def validate_response(
         True if the response is valid and should be accepted.
     """
     # The responder identity lives on the axon; dendrite.hotkey is the caller.
-    responder_hotkey = None
-    if getattr(response, "axon", None) is not None:
-        responder_hotkey = getattr(response.axon, "hotkey", None)
-    if responder_hotkey is None and response.dendrite is not None:
-        responder_hotkey = getattr(response.dendrite, "hotkey", None)
+    # SDK v10 renamed hotkey → hotkey_ss58; get_hotkey() handles both.
+    responder_hotkey = get_hotkey(getattr(response, "axon", None))
+    if responder_hotkey is None:
+        responder_hotkey = get_hotkey(response.dendrite)
 
     if responder_hotkey is None:
         bt.logging.debug("Response missing responder hotkey, rejecting")

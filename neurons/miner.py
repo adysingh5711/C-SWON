@@ -35,16 +35,7 @@ from cswon.protocol import WorkflowSynapse
 from cswon.base.miner import BaseMinerNeuron
 from cswon.validator.config import SCORING_VERSION
 from cswon.miner.subnet_profiler import SubnetProfiler
-from bittensor.core.axon import Axon
-
-def _safe_axon_del(self):
-    try:
-        if hasattr(self, "fast_server") and self.fast_server is not None:
-            self.stop()
-    except Exception:
-        pass
-
-Axon.__del__ = _safe_axon_del
+from cswon.utils.misc import get_hotkey
 
 
 class Miner(BaseMinerNeuron):
@@ -318,51 +309,53 @@ class Miner(BaseMinerNeuron):
         Blacklist non-registered or non-validator entities.
         Only validators should query miners (readme §3.3).
         """
-        if synapse.dendrite is None or synapse.dendrite.hotkey is None:
+        caller_hotkey = get_hotkey(synapse.dendrite)
+        if synapse.dendrite is None or caller_hotkey is None:
             bt.logging.warning("Request without dendrite or hotkey")
             return True, "Missing dendrite or hotkey"
 
         caller_uid = None
 
         # Check if the requester is registered
-        if synapse.dendrite.hotkey not in self.metagraph.hotkeys:
+        if caller_hotkey not in self.metagraph.hotkeys:
             if not self.config.blacklist.allow_non_registered:
                 bt.logging.trace(
-                    f"Blacklisting unregistered hotkey {synapse.dendrite.hotkey}"
+                    f"Blacklisting unregistered hotkey {caller_hotkey}"
                 )
                 return True, "Unrecognized hotkey"
         else:
-            caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
+            caller_uid = self.metagraph.hotkeys.index(caller_hotkey)
 
         # Optionally enforce validator permit
         if self.config.blacklist.force_validator_permit:
             if caller_uid is None:
                 bt.logging.warning(
-                    f"Blacklisting unregistered hotkey {synapse.dendrite.hotkey} "
+                    f"Blacklisting unregistered hotkey {caller_hotkey} "
                     "because validator permit enforcement is enabled"
                 )
                 return True, "Validator permit required"
             if not self.metagraph.validator_permit[caller_uid]:
                 bt.logging.warning(
-                    f"Blacklisting non-validator hotkey {synapse.dendrite.hotkey}"
+                    f"Blacklisting non-validator hotkey {caller_hotkey}"
                 )
                 return True, "Non-validator hotkey"
 
         bt.logging.trace(
-            f"Accepting request from {synapse.dendrite.hotkey}"
+            f"Accepting request from {caller_hotkey}"
         )
         return False, "Hotkey recognized"
 
     async def priority(self, synapse: WorkflowSynapse) -> float:
         """Priority based on stake — higher stake validators get priority."""
-        if synapse.dendrite is None or synapse.dendrite.hotkey is None:
+        caller_hotkey = get_hotkey(synapse.dendrite)
+        if synapse.dendrite is None or caller_hotkey is None:
             return 0.0
 
         try:
-            caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
+            caller_uid = self.metagraph.hotkeys.index(caller_hotkey)
             priority = float(self.metagraph.S[caller_uid])
             bt.logging.trace(
-                f"Priority for {synapse.dendrite.hotkey}: {priority}"
+                f"Priority for {caller_hotkey}: {priority}"
             )
             return priority
         except ValueError:

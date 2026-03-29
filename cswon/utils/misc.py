@@ -15,6 +15,18 @@ _block_cache: dict = {}
 _block_cache_ttl: float = 12.0  # one Bittensor block is ~12 seconds
 
 
+def get_hotkey(terminal_info) -> Any:
+    """
+    SDK v10 renamed ``TerminalInfo.hotkey`` to ``hotkey_ss58``.
+    This helper returns whichever attribute exists, providing
+    forward- and backward-compatible access.
+    """
+    if terminal_info is None:
+        return None
+    # Prefer the v10 name first; fall back to legacy.
+    return getattr(terminal_info, "hotkey_ss58", None) or getattr(terminal_info, "hotkey", None)
+
+
 def ttl_get_block(subtensor: "bt.Subtensor") -> int:
     """
     Get the current block number with TTL caching to avoid excessive RPC calls.

@@ -133,7 +133,7 @@ class _AuditHandler(BaseHTTPRequestHandler):
 def _start_monitoring_server(port: int = 9090) -> None:
     """Start the audit flag monitoring server in a background daemon thread."""
     try:
-        server = HTTPServer(("0.0.0.0", port), _AuditHandler)
+        server = HTTPServer(("127.0.0.1", port), _AuditHandler)
         t = threading.Thread(target=server.serve_forever, daemon=True)
         t.start()
         bt.logging.info(f"Audit monitoring endpoint started: http://0.0.0.0:{port}/audit-flags")
