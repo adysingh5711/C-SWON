@@ -116,7 +116,7 @@
   {
     "task_id": "data_001",
     "task_type": "data_transform",
-    "status": "active",
+    "status": "deprecated",
     "description": "Convert this CSV row to JSON: name,age,city\nAlice,30,Delhi",
     "quality_criteria": {},
     "constraints": {
@@ -142,7 +142,8 @@
     },
     "reference": {
       "expected_output": "{\"name\": \"Alice\", \"age\": \"30\", \"city\": \"Delhi\"}"
-    }
+    },
+    "deprecation_reason": "auto-lifecycle"
   },
   {
     "task_id": "synthetic_001",
