@@ -1,11 +1,11 @@
 export const seoConfig = {
   title: "C-SWON — Cross-Subnet Workflow Orchestration",
   description: "Zapier for Subnets — The Intelligence Layer for Multi-Subnet Composition on Bittensor.",
-  canonical: "https://cswon.vercel.app", // Replace with actual domain if known
+  canonical: "https://c-swon.vercel.app", // Replace with actual domain if known
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://cswon.vercel.app",
+    url: "https://c-swon.vercel.app",
     site_name: "C-SWON",
     images: [
       {

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { seoConfig } from "@/lib/seo.config";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -59,7 +62,7 @@ const jsonLd = {
     "name": "C-SWON Network",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://cswon.vercel.app/images/web-app-manifest-512x512.png"
+      "url": "https://c-swon.vercel.app/images/web-app-manifest-512x512.png"
     }
   }
 };
@@ -72,10 +75,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-SCB526X0ZV"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-SCB526X0ZV');
+          `}
+        </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Nav />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
