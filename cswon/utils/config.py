@@ -237,6 +237,13 @@ def add_validator_args(cls, parser):
     )
 
     parser.add_argument(
+        "--neuron.early_boost_window",
+        type=int,
+        help="Early miner boost window in blocks (default 1296000 = ~6 months).",
+        default=1_296_000,
+    )
+
+    parser.add_argument(
         "--wandb.project_name",
         type=str,
         help="The name of the project where you are sending the new run.",

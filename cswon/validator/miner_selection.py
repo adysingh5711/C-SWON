@@ -23,7 +23,9 @@ from cswon.validator.config import (
 )
 
 # 6-month boost window in blocks (~12 s/block, 30 days/month → 6×30×24×300 = 1,296,000)
-EARLY_MINER_BOOST_WINDOW = 1_296_000
+EARLY_MINER_BOOST_WINDOW = int(
+    os.environ.get("CSWON_EARLY_BOOST_WINDOW", "1296000")
+)
 
 REQUIRED_TASK_FIELDS = {
     "task_id",
