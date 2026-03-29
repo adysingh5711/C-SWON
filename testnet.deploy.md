@@ -148,12 +148,14 @@ Navigate to your C-SWON local repository, ensure dependencies are installed (`pi
 
 ## 6.1 Required environment variables
 
-Export these before starting the validator (perplex_fix4 §7):
+> **CRITICAL:** Both variables below are **required**. The validator will refuse to start on testnet without `CSWON_SYNTHETIC_SALT`. Generate a persistent salt once and reuse it across restarts for scoring consistency.
 
 ```bash
 export CSWON_MOCK_EXEC=true
 export CSWON_SYNTHETIC_SALT=$(python -c "import secrets; print(secrets.token_hex(32))")
 ```
+
+Save the salt value somewhere safe — reuse the same salt if you restart the validator.
 
 ---
 
@@ -161,13 +163,11 @@ export CSWON_SYNTHETIC_SALT=$(python -c "import secrets; print(secrets.token_hex
 
 When running C-SWON on the testnet, be aware of the following potential codebase configurations that need override:
 
-1. **Wandb Configuration Conflicts**: 
-   The default setup in `cswon/utils/config.py` uses `--wandb.project_name` set to `template-miners` / `template-validators` under the `opentensor-dev` `--wandb.entity`. If you try to log here on testnet without access, the API call will bounce, and your neuron will crash.
-   **Solution**: Either run with `--wandb.off` to disable logging entirely, or pass your own W&B project entity strings (`--wandb.entity your-org --wandb.project_name your-project`).
+1. **Wandb Configuration**:
+   WandB logging defaults are empty (no entity or project configured). If you want to enable WandB, pass your own entity and project strings: `--wandb.entity your-org --wandb.project_name your-project`. Otherwise, use `--wandb.off` to disable logging entirely (recommended for testnet).
 
-2. **Default netuid=1**:
-   The default `netuid` argument across C-SWON is `1`. Netuid `1` on the testnet might already be claimed (or it might be an entirely different subnet). 
-   **Solution**: Always pass `--netuid <netuid>` matching the one returned when your subnet was created.
+2. **`--netuid` is required**:
+   There is no default `netuid` — you must always pass `--netuid <netuid>` matching the one returned when your subnet was created. The CLI will error if you forget this flag.
 
 3. **Environment and Secrets Management**:
    If your C-SWON application relies on local environmental keys (API endpoints, specific db credentials, OpenAI keys for generation, etc.), these must be available to the processes running `neurons/miner.py` and `neurons/validator.py`. Missing local configuration could cause exceptions when workflows trigger.
