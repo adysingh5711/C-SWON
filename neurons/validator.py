@@ -72,6 +72,9 @@ class Validator(BaseValidatorNeuron):
     def _startup_preflight(self):
         """
         Aborts startup if no serving miners found (perplex_fix4 §4).
+
+        On local devnets with few UIDs, all nodes may receive validator_permit.
+        Fall back to checking for any serving non-self UID in that case.
         """
         serving_miners = [
             uid
@@ -80,6 +83,19 @@ class Validator(BaseValidatorNeuron):
             and not self.metagraph.validator_permit[uid]
             and uid != self.uid
         ]
+        if not serving_miners and self.config.subtensor.network == "local":
+            # On local chains all UIDs may have vpermit; accept any serving non-self UID
+            serving_miners = [
+                uid
+                for uid in range(int(self.metagraph.n))
+                if self.metagraph.axons[uid].is_serving
+                and uid != self.uid
+            ]
+            if serving_miners:
+                bt.logging.warning(
+                    f"Local chain: all UIDs have validator_permit. "
+                    f"Treating serving non-self UIDs as miners: {serving_miners}"
+                )
         if not serving_miners:
             raise RuntimeError(
                 "No serving miners found on subnet; start at least one miner before validator."
@@ -120,6 +136,6 @@ if __name__ == "__main__":
                 bt.logging.error("Validator background thread stopped unexpectedly.")
                 sys.exit(1)
             bt.logging.info(
-                f"C-SWON Validator running... block={validator.block}"
+                f"C-SWON Validator running... step={validator.step}"
             )
             time.sleep(5)

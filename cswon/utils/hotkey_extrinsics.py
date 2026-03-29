@@ -178,19 +178,24 @@ async def _set_weights_via_btcli_async(
     from bittensor_wallet import Wallet as CliWallet
     from bittensor_cli.src.bittensor.subtensor_interface import SubtensorInterface
     from bittensor_cli.src.commands.weights import SetWeightsExtrinsic
+    from bittensor_cli.src.bittensor.extrinsics.root import (
+        convert_weights_and_uids_for_emit,
+    )
 
     disk_cache_before = os.environ.get("DISK_CACHE")
     os.environ["DISK_CACHE"] = "0"
     try:
         wallet = CliWallet(name=wallet_name, hotkey=wallet_hotkey, path=wallet_path)
         async with SubtensorInterface(network, use_disk_cache=False) as subtensor:
+            uids_arr = np.asarray(list(uids), dtype=np.int64)
+            weights_arr = np.asarray(list(weights), dtype=np.float32)
             extrinsic = SetWeightsExtrinsic(
                 subtensor=subtensor,
                 wallet=wallet,
                 netuid=netuid,
                 proxy=None,
-                uids=np.asarray(list(uids), dtype=np.int64),
-                weights=np.asarray(list(weights), dtype=np.float32),
+                uids=uids_arr,
+                weights=weights_arr,
                 salt=[],
                 version_key=version_key,
                 prompt=False,
@@ -199,7 +204,39 @@ async def _set_weights_via_btcli_async(
                 wait_for_inclusion=True,
                 wait_for_finalization=True,
             )
-            success, message, _ = await extrinsic.set_weights_extrinsic()
+            try:
+                success, message, _ = await extrinsic.set_weights_extrinsic()
+            except Exception as e:
+                err_str = str(e).lower()
+                # Fall back to raw set_weights when the CLI extrinsic fails
+                # for commit-reveal related reasons on local chains:
+                is_cr_missing = "get_commit_reveal_weights_enabled" in err_str
+                is_bad_sig = "bad signature" in err_str
+                if not (is_cr_missing or is_bad_sig):
+                    raise
+
+                weight_uids, weight_vals = convert_weights_and_uids_for_emit(
+                    uids_arr, weights_arr
+                )
+                call = await subtensor.substrate.compose_call(
+                    call_module="SubtensorModule",
+                    call_function="set_weights",
+                    call_params={
+                        "dests": weight_uids,
+                        "weights": weight_vals,
+                        "netuid": netuid,
+                        "version_key": version_key,
+                    },
+                )
+                success, message, _ = await subtensor.sign_and_send_extrinsic(
+                    call=call,
+                    sign_with="hotkey",
+                    wallet=wallet,
+                    era={"period": 5},
+                    wait_for_inclusion=True,
+                    wait_for_finalization=True,
+                    proxy=None,
+                )
             return success, message
     finally:
         _restore_env("DISK_CACHE", disk_cache_before)

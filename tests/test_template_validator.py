@@ -111,6 +111,13 @@ class TestScoreAggregator(unittest.TestCase):
         agg = ScoreAggregator()
         self.assertEqual(agg.get_average_score(999), 0.0)
 
+    def test_single_miner_gets_full_weight(self):
+        """A one-miner subnet must normalise to a stable 1.0 weight, not NaN."""
+        agg = ScoreAggregator()
+        for _ in range(10):
+            agg.add_score(uid=2, score=0.975)
+        self.assertEqual(agg.get_normalised_weights([2]), {2: 1.0})
+
 
 # ── 2. Composite Scoring — four-dimension formula ─────────────────────────────
 

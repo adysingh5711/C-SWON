@@ -203,6 +203,15 @@ def select_miners_for_query(
         and (current_block - subnet_launch_block) < EARLY_MINER_BOOST_WINDOW
     )
 
+    # On local devnets, all UIDs may have vpermit and high stake due to AMM
+    is_local = (
+        subtensor is not None
+        and getattr(subtensor, "network", "") == "local"
+    ) or (
+        subtensor is not None
+        and "127.0.0.1" in str(getattr(subtensor, "chain_endpoint", ""))
+    )
+
     candidates = []
     weights = []
 
@@ -214,7 +223,8 @@ def select_miners_for_query(
         if uid in exclude:
             continue
         # Skip validators (those with validator permits and high stake)
-        if metagraph.validator_permit[uid] and metagraph.S[uid] > 1024:
+        # On local chains, skip this check since all UIDs may be validators
+        if not is_local and metagraph.validator_permit[uid] and metagraph.S[uid] > 1024:
             continue
 
         # Strict immunity check: real chain lookup only (issue 2.4/Fix 7).

@@ -428,15 +428,29 @@ class ScoreAggregator:
         """
         raw_weights = {uid: self.get_average_score(uid) for uid in miner_uids}
         scores = np.array(list(raw_weights.values()), dtype=np.float64)
-        
+
+        if len(scores) == 0:
+            return {}
+
         if np.max(scores) == 0:
             return {uid: 0.0 for uid in miner_uids}
+
+        # A single active miner should receive the full weight.
+        # SciPy's zscore([x]) returns NaN, which later breaks set_weights().
+        if len(scores) == 1:
+            only_uid = miner_uids[0]
+            return {only_uid: 1.0}
 
         try:
             from scipy.stats import zscore
             z_scores = zscore(scores)
         except ImportError:
             # Manual z-score — no scipy required
+            mu, std = scores.mean(), scores.std()
+            z_scores = (scores - mu) / std if std > 0 else np.zeros_like(scores)
+
+        # Guard against NaN/Inf from singleton or zero-variance edge cases.
+        if not np.isfinite(z_scores).all():
             mu, std = scores.mean(), scores.std()
             z_scores = (scores - mu) / std if std > 0 else np.zeros_like(scores)
 

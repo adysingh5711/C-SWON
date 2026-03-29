@@ -222,6 +222,11 @@ class BaseValidatorNeuron(BaseNeuron):
                     f"{self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid} "
                     f"(scoring_version={SCORING_VERSION})"
                 )
+                self.axon.start()
+                bt.logging.info(
+                    f"Validator axon started on port {self.axon.port} "
+                    f"(external_port={self.axon.external_port or self.axon.port})"
+                )
             except Exception as e:
                 bt.logging.error(f"Failed to serve Axon with exception: {e}")
                 pass
@@ -367,6 +372,17 @@ class BaseValidatorNeuron(BaseNeuron):
             uid for uid in range(int(self.metagraph.n))
             if not self.metagraph.validator_permit[uid]
         ]
+
+        # On local devnets all UIDs may have vpermit; treat non-self serving UIDs as miners
+        if not miner_uids and self.config.subtensor.network == "local":
+            miner_uids = [
+                uid for uid in range(int(self.metagraph.n))
+                if uid != self.uid and self.metagraph.axons[uid].is_serving
+            ]
+            if miner_uids:
+                bt.logging.warning(
+                    f"Local chain: all UIDs have vpermit, using serving non-self UIDs as miners: {miner_uids}"
+                )
 
         if hasattr(self, "score_aggregator") and miner_uids:
             # ── Spec-compliant path: rolling window + 15% cap ─────────────────

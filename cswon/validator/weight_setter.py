@@ -78,26 +78,18 @@ def set_weights_on_chain(
     spec_version,
 ) -> bool:
     try:
-        if should_use_btcli_hotkey_extrinsics(
+        use_local_helper = should_use_btcli_hotkey_extrinsics(
             getattr(subtensor, "network", None),
             getattr(subtensor, "chain_endpoint", None),
-        ):
-            bt.logging.info(
-                "Using btcli-compatible set_weights path for local-chain submission."
+        )
+
+        # On local chains, prefer the SDK path first — the btcli path often
+        # fails with bad-signature or subscription errors on devnet.
+        # Fall back to btcli only if the SDK path fails.
+        if use_local_helper:
+            bt.logging.debug(
+                "Local chain detected — trying SDK set_weights first."
             )
-            ok, retry_message = set_weights_via_btcli(
-                wallet=wallet,
-                network=subtensor.chain_endpoint,
-                netuid=netuid,
-                uids=miner_uids,
-                weights=normalised_weights,
-                version_key=spec_version,
-            )
-            if ok:
-                bt.logging.info("set_weights on chain successfully!")
-                return True
-            bt.logging.error(f"Local-chain set_weights failed: {retry_message}")
-            return False
 
         response = subtensor.set_weights(
             wallet=wallet,

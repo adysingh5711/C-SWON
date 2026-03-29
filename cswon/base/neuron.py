@@ -57,7 +57,7 @@ class BaseNeuron(ABC):
 
     @property
     def block(self):
-        return ttl_get_block(self)
+        return ttl_get_block(self.subtensor)
 
     def __init__(self, config=None):
         base_config = copy.deepcopy(config or BaseNeuron.config())
