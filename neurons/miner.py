@@ -26,6 +26,7 @@ Run: python neurons/miner.py --netuid <netuid> --wallet.name <name> --subtensor.
 
 import time
 import typing
+import sys
 
 import bittensor as bt
 
@@ -306,6 +307,8 @@ class Miner(BaseMinerNeuron):
             bt.logging.warning("Request without dendrite or hotkey")
             return True, "Missing dendrite or hotkey"
 
+        caller_uid = None
+
         # Check if the requester is registered
         if synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             if not self.config.blacklist.allow_non_registered:
@@ -313,11 +316,18 @@ class Miner(BaseMinerNeuron):
                     f"Blacklisting unregistered hotkey {synapse.dendrite.hotkey}"
                 )
                 return True, "Unrecognized hotkey"
+        else:
+            caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
 
         # Optionally enforce validator permit
         if self.config.blacklist.force_validator_permit:
-            uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
-            if not self.metagraph.validator_permit[uid]:
+            if caller_uid is None:
+                bt.logging.warning(
+                    f"Blacklisting unregistered hotkey {synapse.dendrite.hotkey} "
+                    "because validator permit enforcement is enabled"
+                )
+                return True, "Validator permit required"
+            if not self.metagraph.validator_permit[caller_uid]:
                 bt.logging.warning(
                     f"Blacklisting non-validator hotkey {synapse.dendrite.hotkey}"
                 )
@@ -357,7 +367,17 @@ if __name__ == "__main__":
     miner = Miner()
     # run() handles sync + serve + axon.start internally in background thread
     with miner:
-        # Keep main thread alive
-        while not miner.should_exit:
+        # Keep main thread alive and fail fast if the worker thread dies.
+        while True:
+            if miner._fatal_error is not None:
+                bt.logging.error(
+                    f"Miner background thread exited: {miner._fatal_error}"
+                )
+                sys.exit(1)
+            if miner.thread is not None and not miner.thread.is_alive():
+                bt.logging.error("Miner background thread stopped unexpectedly.")
+                sys.exit(1)
+            if miner.should_exit:
+                break
             bt.logging.info(f"C-SWON Miner running... block={miner.block}")
             time.sleep(15)

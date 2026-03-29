@@ -152,6 +152,30 @@ def _ensure_monitoring_server() -> None:
         _monitoring_started = True
 
 
+def _get_effective_tempo(self) -> int:
+    """
+    Use the live subnet tempo when available and fall back to the static config.
+    This keeps local-chain tempo-boundary logic aligned with the actual chain.
+    """
+    current_block = int(self.block)
+    cached_block = getattr(self, "_cached_tempo_block", -1)
+    cached_tempo = getattr(self, "_cached_tempo_value", None)
+    if cached_tempo is not None and cached_block == current_block:
+        return cached_tempo
+
+    try:
+        params = self.subtensor.get_subnet_hyperparameters(self.config.netuid)
+        tempo = int(getattr(params, "tempo", TEMPO) or TEMPO)
+    except Exception as e:
+        bt.logging.debug(f"Falling back to static tempo={TEMPO}: {e}")
+        tempo = TEMPO
+
+    tempo = max(1, tempo)
+    self._cached_tempo_value = tempo
+    self._cached_tempo_block = current_block
+    return tempo
+
+
 # ── Cache helpers ────────────────────────────────────────────────────────────
 
 def _get_benchmark_tasks() -> List[dict]:
@@ -442,7 +466,7 @@ async def forward(self):
         self.score_aggregator.tasks_executed_this_tempo = _tasks_executed_this_tempo
 
     # 6d. At tempo boundary: flush lifecycle changes + log exec support eligibility
-    current_tempo = self.block // TEMPO
+    current_tempo = self.block // _get_effective_tempo(self)
     if current_tempo > _last_lifecycle_tempo:
         _last_lifecycle_tempo = current_tempo
 

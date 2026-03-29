@@ -23,10 +23,10 @@ import numpy as np
 import asyncio
 import argparse
 import threading
+import traceback
 import bittensor as bt
 
 from typing import List, Union
-from traceback import print_exception
 
 from cswon.base.neuron import BaseNeuron
 from cswon.base.utils.weight_utils import (
@@ -35,6 +35,12 @@ from cswon.base.utils.weight_utils import (
 )
 from cswon.mock import MockDendrite
 from cswon.utils.config import add_validator_args
+from cswon.utils.hotkey_extrinsics import (
+    get_preferred_local_axon_ip,
+    is_bad_signature_error,
+    serve_axon_via_btcli,
+    should_use_btcli_hotkey_extrinsics,
+)
 from cswon.validator import weight_setter as ws
 from cswon.validator.config import (
     SCORING_VERSION,
@@ -59,6 +65,23 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def __init__(self, config=None):
         super().__init__(config=config)
+
+        if (
+            self.config.subtensor.network == "local"
+            and not getattr(self.config.axon, "external_ip", None)
+        ):
+            local_ip = get_preferred_local_axon_ip()
+            if local_ip is not None:
+                self.config.axon.external_ip = local_ip
+                bt.logging.info(
+                    f"Using local-chain validator axon external IP {local_ip}."
+                )
+            else:
+                bt.logging.warning(
+                    "Could not determine a non-loopback local IP for local-chain "
+                    "validator serving. Pass --axon.external_ip explicitly if "
+                    "serve updates fail."
+                )
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
@@ -100,6 +123,8 @@ class BaseValidatorNeuron(BaseNeuron):
         self.is_running: bool = False
         self.thread: Union[threading.Thread, None] = None
         self.lock = asyncio.Lock()
+        self._fatal_error: Union[BaseException, None] = None
+        self._fatal_traceback: str = ""
 
     def serve_axon(self):
         """Serve axon to enable external connections.
@@ -139,12 +164,59 @@ class BaseValidatorNeuron(BaseNeuron):
                 self.axon = bt.Axon(wallet=self.wallet, config=self.config)
 
             try:
-                self.subtensor.serve_axon(
-                    netuid=self.config.netuid,
-                    axon=self.axon,
-                    wait_for_inclusion=False,
-                    wait_for_finalization=False,
-                )
+                serve_ip = self.axon.external_ip
+                serve_port = self.axon.external_port or self.axon.port
+                if should_use_btcli_hotkey_extrinsics(
+                    self.config.subtensor.network,
+                    self.config.subtensor.chain_endpoint,
+                ):
+                    bt.logging.info(
+                        "Using btcli-compatible validator serve_axon path for local-chain startup."
+                    )
+                    ok, retry_message = serve_axon_via_btcli(
+                        wallet=self.wallet,
+                        network=self.config.subtensor.chain_endpoint,
+                        netuid=self.config.netuid,
+                        ip=serve_ip,
+                        port=serve_port,
+                    )
+                    if ok:
+                        bt.logging.info(
+                            "Local-chain validator axon serve succeeded via btcli-compatible path."
+                        )
+                    else:
+                        bt.logging.error(
+                            f"Local-chain validator axon serve failed: {retry_message}"
+                        )
+                else:
+                    serve_response = self.subtensor.serve_axon(
+                        netuid=self.config.netuid,
+                        axon=self.axon,
+                        wait_for_inclusion=False,
+                        wait_for_finalization=False,
+                    )
+                    if getattr(serve_response, "success", True) is False:
+                        message = getattr(serve_response, "message", "")
+                        if is_bad_signature_error(message):
+                            bt.logging.warning(
+                                "Core SDK validator serve_axon failed with a bad-signature "
+                                "error. Retrying through the btcli-compatible fallback path."
+                            )
+                            ok, retry_message = serve_axon_via_btcli(
+                                wallet=self.wallet,
+                                network=self.config.subtensor.chain_endpoint,
+                                netuid=self.config.netuid,
+                                ip=serve_ip,
+                                port=serve_port,
+                            )
+                            if ok:
+                                bt.logging.info(
+                                    "Fallback validator axon serve succeeded via btcli-compatible path."
+                                )
+                            else:
+                                bt.logging.warning(
+                                    f"Fallback validator axon serve failed: {retry_message}"
+                                )
                 bt.logging.info(
                     f"Running validator {self.axon} on network: "
                     f"{self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid} "
@@ -214,16 +286,24 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # If someone intentionally stops the validator, it'll safely terminate operations.
         except KeyboardInterrupt:
+            self.should_exit = True
             self.axon.stop()
             bt.logging.success("Validator killed by keyboard interrupt.")
             exit()
 
         # In case of unforeseen errors, the validator will log the error and continue operations.
         except Exception as err:
+            self._fatal_error = err
+            self._fatal_traceback = traceback.format_exc()
+            self.should_exit = True
             bt.logging.error(f"Error during validation: {str(err)}")
-            bt.logging.debug(
-                str(print_exception(type(err), err, err.__traceback__))
-            )
+            bt.logging.error(self._fatal_traceback)
+            try:
+                self.axon.stop()
+            except Exception:
+                pass
+        finally:
+            self.is_running = False
 
     def run_in_background_thread(self):
         """

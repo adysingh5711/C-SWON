@@ -25,6 +25,12 @@ import bittensor as bt
 
 from cswon.base.neuron import BaseNeuron
 from cswon.utils.config import add_miner_args
+from cswon.utils.hotkey_extrinsics import (
+    get_preferred_local_axon_ip,
+    is_bad_signature_error,
+    serve_axon_via_btcli,
+    should_use_btcli_hotkey_extrinsics,
+)
 
 from typing import Union
 
@@ -43,6 +49,23 @@ class BaseMinerNeuron(BaseNeuron):
 
     def __init__(self, config=None):
         super().__init__(config=config)
+
+        if (
+            self.config.subtensor.network == "local"
+            and not getattr(self.config.axon, "external_ip", None)
+        ):
+            local_ip = get_preferred_local_axon_ip()
+            if local_ip is not None:
+                self.config.axon.external_ip = local_ip
+                bt.logging.info(
+                    f"Using local-chain axon external IP {local_ip}."
+                )
+            else:
+                bt.logging.warning(
+                    "Could not determine a non-loopback local IP for local-chain "
+                    "axon serving. Pass --axon.external_ip explicitly if serve "
+                    "updates fail."
+                )
 
         # Warn if allowing incoming requests from anyone.
         if not self.config.blacklist.force_validator_permit:
@@ -103,6 +126,8 @@ class BaseMinerNeuron(BaseNeuron):
         self.is_running: bool = False
         self.thread: Union[threading.Thread, None] = None
         self.lock = asyncio.Lock()
+        self._fatal_error: Union[BaseException, None] = None
+        self._fatal_traceback: str = ""
 
     def run(self):
         """
@@ -139,12 +164,57 @@ class BaseMinerNeuron(BaseNeuron):
             f"Serving miner axon {self.axon} on network: "
             f"{self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
         )
-        self.subtensor.serve_axon(
-            netuid=self.config.netuid,
-            axon=self.axon,
-            wait_for_inclusion=False,
-            wait_for_finalization=False,
-        )
+        serve_ip = self.axon.external_ip
+        serve_port = self.axon.external_port or self.axon.port
+        if should_use_btcli_hotkey_extrinsics(
+            self.config.subtensor.network,
+            self.config.subtensor.chain_endpoint,
+        ):
+            bt.logging.info(
+                "Using btcli-compatible serve_axon path for local-chain startup."
+            )
+            ok, retry_message = serve_axon_via_btcli(
+                wallet=self.wallet,
+                network=self.config.subtensor.chain_endpoint,
+                netuid=self.config.netuid,
+                ip=serve_ip,
+                port=serve_port,
+            )
+            if ok:
+                bt.logging.info(
+                    "Local-chain axon serve succeeded via btcli-compatible path."
+                )
+            else:
+                bt.logging.error(f"Local-chain axon serve failed: {retry_message}")
+        else:
+            serve_response = self.subtensor.serve_axon(
+                netuid=self.config.netuid,
+                axon=self.axon,
+                wait_for_inclusion=False,
+                wait_for_finalization=False,
+            )
+            if getattr(serve_response, "success", True) is False:
+                message = getattr(serve_response, "message", "")
+                if is_bad_signature_error(message):
+                    bt.logging.warning(
+                        "Core SDK serve_axon failed with a bad-signature error. "
+                        "Retrying through the btcli-compatible fallback path."
+                    )
+                    ok, retry_message = serve_axon_via_btcli(
+                        wallet=self.wallet,
+                        network=self.config.subtensor.chain_endpoint,
+                        netuid=self.config.netuid,
+                        ip=serve_ip,
+                        port=serve_port,
+                    )
+                    if ok:
+                        bt.logging.info(
+                            "Fallback axon serve succeeded via btcli-compatible path."
+                        )
+                    else:
+                        bt.logging.warning(
+                            f"Fallback axon serve failed: {retry_message}"
+                        )
 
         # Start starts the miner's axon, making it active on the network.
         self.axon.start()
@@ -170,13 +240,23 @@ class BaseMinerNeuron(BaseNeuron):
 
         # If someone intentionally stops the miner, it'll safely terminate operations.
         except KeyboardInterrupt:
+            self.should_exit = True
             self.axon.stop()
             bt.logging.success("Miner killed by keyboard interrupt.")
             exit()
 
         # In case of unforeseen errors, the miner will log the error and continue operations.
         except Exception as e:
-            bt.logging.error(traceback.format_exc())
+            self._fatal_error = e
+            self._fatal_traceback = traceback.format_exc()
+            self.should_exit = True
+            bt.logging.error(self._fatal_traceback)
+            try:
+                self.axon.stop()
+            except Exception:
+                pass
+        finally:
+            self.is_running = False
 
     def run_in_background_thread(self):
         """

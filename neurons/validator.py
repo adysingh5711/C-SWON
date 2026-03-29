@@ -111,6 +111,14 @@ if __name__ == "__main__":
         signal.signal(signal.SIGTERM, sig_handler)
 
         while True:
+            if validator._fatal_error is not None:
+                bt.logging.error(
+                    f"Validator background thread exited: {validator._fatal_error}"
+                )
+                sys.exit(1)
+            if validator.thread is not None and not validator.thread.is_alive():
+                bt.logging.error("Validator background thread stopped unexpectedly.")
+                sys.exit(1)
             bt.logging.info(
                 f"C-SWON Validator running... block={validator.block}"
             )
