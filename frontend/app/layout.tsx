@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: seoConfig.description,
   metadataBase: new URL(seoConfig.canonical),
   alternates: {
-    canonical: "/",
+    canonical: seoConfig.canonical,
   },
   openGraph: {
     ...seoConfig.openGraph,

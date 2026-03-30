@@ -6,7 +6,7 @@ export const seoConfig = {
     type: "website",
     locale: "en_US",
     url: "https://c-swon.vercel.app",
-    site_name: "C-SWON",
+    siteName: "C-SWON",
     images: [
       {
         url: "/images/og-image.png",
@@ -17,8 +17,8 @@ export const seoConfig = {
     ],
   },
   twitter: {
-    handle: "@cswon_network",
+    creator: "@cswon_network",
     site: "@cswon_network",
-    cardType: "summary_large_image",
+    card: "summary_large_image",
   },
 };
