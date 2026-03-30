@@ -24,6 +24,11 @@ class MockSubtensor(bt.MockSubtensor):
     """Mock subtensor for local testing."""
 
     def __init__(self, netuid, n=16, wallet=None, network="mock"):
+        # Clear the SDK's shared global mock state so each instance
+        # starts clean. We cannot call cls.reset() because it tries
+        # to instantiate cls(), which requires our 'netuid' argument.
+        from bittensor.utils.mock.subtensor_mock import __GLOBAL_MOCK_STATE__
+        __GLOBAL_MOCK_STATE__.clear()
         super().__init__(network=network)
 
         try:
@@ -57,6 +62,46 @@ class MockSubtensor(bt.MockSubtensor):
             except Exception:
                 pass
 
+    def neuron_for_uid_lite(self, uid, netuid, block=None):
+        """Override to fix SDK v10 NeuronInfo missing rank/trust."""
+        from bittensor.core.chain_data import NeuronInfoLite
+
+        if uid is None:
+            return NeuronInfoLite.get_null_neuron()
+
+        if block is not None and self.block_number < block:
+            raise Exception("Cannot query block in the future")
+
+        if block is None:
+            block = self.block_number
+
+        if netuid not in self.chain_state["SubtensorModule"]["NetworksAdded"]:
+            return None
+
+        neuron_info = self._neuron_subnet_exists(uid, netuid, block)
+        if neuron_info is None:
+            return None
+
+        return NeuronInfoLite(
+            hotkey=neuron_info.hotkey,
+            coldkey=neuron_info.coldkey,
+            uid=getattr(neuron_info, "uid", uid),
+            netuid=getattr(neuron_info, "netuid", netuid),
+            active=getattr(neuron_info, "active", True),
+            stake=neuron_info.stake,
+            stake_dict=getattr(neuron_info, "stake_dict", {}),
+            total_stake=neuron_info.total_stake,
+            emission=getattr(neuron_info, "emission", 0.0),
+            incentive=getattr(neuron_info, "incentive", 0.0),
+            consensus=getattr(neuron_info, "consensus", 0.0),
+            validator_trust=getattr(neuron_info, "validator_trust", 0.0),
+            dividends=getattr(neuron_info, "dividends", 0.0),
+            last_update=getattr(neuron_info, "last_update", 0),
+            validator_permit=getattr(neuron_info, "validator_permit", False),
+            prometheus_info=getattr(neuron_info, "prometheus_info", None),
+            axon_info=getattr(neuron_info, "axon_info", None),
+        )
+
 
 class MockMetagraph(bt.Metagraph):
     """Mock metagraph for local testing."""
@@ -84,6 +129,11 @@ class MockDendrite(bt.Dendrite):
 
     def __init__(self, wallet):
         super().__init__(wallet)
+        # Fix keypair for non-SDK wallet objects (e.g. DummyWallet).
+        # Dendrite.__init__ only extracts wallet.hotkey when wallet
+        # is an instance of the SDK's Wallet class.
+        if hasattr(wallet, "hotkey") and not hasattr(self.keypair, "ss58_address"):
+            self.keypair = wallet.hotkey
 
     async def forward(
         self,

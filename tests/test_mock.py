@@ -11,9 +11,13 @@ from cswon.protocol import WorkflowSynapse
 
 
 class DummyWallet:
+    """Lightweight wallet stand-in for when bt.MockWallet is unavailable."""
     def __init__(self):
         class Key:
             ss58_address = "mock_address"
+            @staticmethod
+            def sign(message):
+                return b"\x00" * 64
         self.hotkey = Key()
         self.coldkey = Key()
 
@@ -23,13 +27,12 @@ def _get_wallet():
     except AttributeError:
         return DummyWallet()
 
-@pytest.mark.skip(reason="Bittensor >=8.0 MockSubtensor retains state across tests and has NeuronInfo incompatibilities.")
 @pytest.mark.parametrize("netuid", [1, 2, 3])
 @pytest.mark.parametrize("n", [2, 4, 8, 16])
 @pytest.mark.parametrize("wallet", [_get_wallet(), None])
 def test_mock_subtensor(netuid, n, wallet):
     subtensor = MockSubtensor(netuid=netuid, n=n, wallet=wallet)
-    neurons = subtensor.neurons(netuid=netuid)
+    neurons = subtensor.neurons_lite(netuid=netuid)
     assert subtensor.subnet_exists(netuid)
     assert subtensor.network == "mock"
     assert len(neurons) == (n + 1 if wallet is not None else n)
@@ -39,7 +42,6 @@ def test_mock_subtensor(netuid, n, wallet):
         )
 
 
-@pytest.mark.skip(reason="Bittensor >=8.0 MockSubtensor NeuronInfo lite lacks rank attribute.")
 @pytest.mark.parametrize("n", [16, 32])
 def test_mock_metagraph(n):
     mock_subtensor = MockSubtensor(netuid=1, n=n)
@@ -52,7 +54,6 @@ def test_mock_metagraph(n):
         assert axon.port == 8091
 
 
-@pytest.mark.skip(reason="Bittensor >=8.0 MockSubtensor NeuronInfo lite lacks rank attribute.")
 def test_mock_dendrite_workflow_synapse():
     """Test that MockDendrite returns proper WorkflowSynapse responses."""
     mock_wallet = _get_wallet()
