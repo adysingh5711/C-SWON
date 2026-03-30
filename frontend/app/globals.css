@@ -1,36 +1,88 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #0a0e17;
-  --color-surface-0: #0f1420;
-  --color-surface-1: #141a2a;
-  --color-surface-2: #1a2235;
-  --color-surface-3: #212b40;
+  --color-canvas: var(--canvas);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
 
-  --color-ink: #e8edf5;
-  --color-ink-secondary: #8a94a8;
-  --color-ink-tertiary: #5a6478;
-  --color-ink-muted: #3d4658;
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+  --color-ink-muted: var(--ink-muted);
 
-  --color-teal: #00d4aa;
-  --color-teal-dim: #00a885;
-  --color-gold: #f0b429;
+  --color-teal: var(--teal);
+  --color-teal-dim: var(--teal-dim);
+  --color-gold: var(--gold);
 
-  --color-purple: #a78bfa;
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --color-warning: #eab308;
+  --color-purple: var(--purple);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
 
-  --color-border: rgba(138, 148, 168, 0.12);
-  --color-border-emphasis: rgba(138, 148, 168, 0.25);
+  --color-border: var(--border-color);
+  --color-border-emphasis: var(--border-color-emphasis);
 
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
   --font-sans: "Geist", "Inter", ui-sans-serif, sans-serif;
 }
 
+@layer base {
+  :root {
+    --canvas: #ffffff;
+    --surface-0: #f8fafc;
+    --surface-1: #f1f5f9;
+    --surface-2: #e2e8f0;
+    --surface-3: #cbd5e1;
+
+    --ink: #0f172a;
+    --ink-secondary: #334155;
+    --ink-tertiary: #475569;
+    --ink-muted: #64748b;
+
+    --teal: #0d9488;
+    --teal-dim: #0f766e;
+    --gold: #d97706;
+
+    --purple: #7c3aed;
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #ea580c;
+
+    --border-color: rgba(15, 23, 42, 0.1);
+    --border-color-emphasis: rgba(15, 23, 42, 0.2);
+  }
+
+  .dark {
+    --canvas: #0a0e17;
+    --surface-0: #0f1420;
+    --surface-1: #141a2a;
+    --surface-2: #1a2235;
+    --surface-3: #212b40;
+
+    --ink: #e8edf5;
+    --ink-secondary: #8a94a8;
+    --ink-tertiary: #5a6478;
+    --ink-muted: #3d4658;
+
+    --teal: #00d4aa;
+    --teal-dim: #00a885;
+    --gold: #f0b429;
+
+    --purple: #a78bfa;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #eab308;
+
+    --border-color: rgba(138, 148, 168, 0.12);
+    --border-color-emphasis: rgba(138, 148, 168, 0.25);
+  }
+}
+
 body {
-  background-color: var(--color-canvas);
-  color: var(--color-ink);
+  background-color: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-sans);
 }
 
@@ -39,9 +91,9 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-0);
+  background: var(--surface-0);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-ink-muted);
+  background: var(--ink-muted);
   border-radius: 3px;
 }

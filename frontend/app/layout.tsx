@@ -7,6 +7,7 @@ import { seoConfig } from "@/lib/seo.config";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DataSourceProvider } from "@/lib/data-source-context";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -73,7 +74,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
@@ -93,11 +94,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <DataSourceProvider>
-          <Nav />
-          <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-        </DataSourceProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-[var(--color-teal)]/30`}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <DataSourceProvider>
+            <Nav />
+            <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+          </DataSourceProvider>
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

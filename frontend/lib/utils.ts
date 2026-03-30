@@ -1,3 +1,10 @@
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
 export function truncateKey(key: string, chars = 6): string {
   if (key.length <= chars * 2 + 3) return key;
   return `${key.slice(0, chars)}...${key.slice(-chars)}`;
@@ -19,8 +26,4 @@ export function formatPercent(value: number): string {
 
 export function formatScore(value: number): string {
   return value.toFixed(3);
-}
-
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(" ");
 }

@@ -4,18 +4,20 @@ import { motion } from "framer-motion";
 import { mockNetworkStats } from "@/lib/mock-data";
 import { StatCard } from "@/components/stat-card";
 import { EmissionSankey } from "@/components/emission-sankey";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const steps = [
-  { num: "01", title: "Describe a Task", desc: "User submits a complex AI task — code generation, RAG, agent workflow, or data transformation.", color: "text-[--color-teal]" },
-  { num: "02", title: "Miners Compete", desc: "Miners design optimized multi-subnet workflow DAGs. Each plan routes work across specialized subnets.", color: "text-[--color-gold]" },
-  { num: "03", title: "Validate & Reward", desc: "Validators execute, score on success/cost/latency/reliability, and reward the best orchestration strategies.", color: "text-purple-400" },
+  { num: "01", title: "Describe a Task", desc: "User submits a complex AI task — code generation, RAG, agent workflow, or data transformation.", color: "text-teal" },
+  { num: "02", title: "Miners Compete", desc: "Miners design optimized multi-subnet workflow DAGs. Each plan routes work across specialized subnets.", color: "text-gold" },
+  { num: "03", title: "Validate & Reward", desc: "Validators execute, score on success/cost/latency/reliability, and reward the best orchestration strategies.", color: "text-purple" },
 ];
 
 const scoreDimensions = [
-  { label: "Success", weight: "50%", desc: "Output quality x completion ratio — did the workflow produce correct results?", color: "bg-emerald-400" },
-  { label: "Cost", weight: "25%", desc: "Budget efficiency — how much TAO was spent vs. the maximum allowed?", color: "bg-[--color-gold]" },
-  { label: "Latency", weight: "15%", desc: "Speed — how quickly did the workflow complete vs. the deadline?", color: "bg-[--color-teal]" },
-  { label: "Reliability", weight: "10%", desc: "Fault tolerance — how few retries, timeouts, or failures occurred?", color: "bg-purple-400" },
+  { label: "Success", weight: "50%", desc: "Output quality x completion ratio — did the workflow produce correct results?", color: "bg-success" },
+  { label: "Cost", weight: "25%", desc: "Budget efficiency — how much TAO was spent vs. the maximum allowed?", color: "bg-gold" },
+  { label: "Latency", weight: "15%", desc: "Speed — how quickly did the workflow complete vs. the deadline?", color: "bg-teal" },
+  { label: "Reliability", weight: "10%", desc: "Fault tolerance — how few retries, timeouts, or failures occurred?", color: "bg-purple" },
 ];
 
 const workflows = [
@@ -55,183 +57,185 @@ const techArticleSchema = {
   "image": "https://c-swon.vercel.app/images/og-image.png"
 };
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+};
+
 export default function LandingPage() {
   return (
-    <div className="space-y-24">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleSchema) }}
-      />
-      {/* Hero */}
-      <section className="pt-16 text-center">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <p className="font-mono text-sm text-[--color-teal]">Bittensor Subnet</p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-[--color-ink] sm:text-5xl">
+    <div className="relative space-y-32 pb-24">
+      {/* Background Decor */}
+      <div className="absolute inset-x-0 top-0 -z-10 transform-gpu overflow-hidden blur-3xl" aria-hidden="true">
+        <div
+          className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-teal to-purple opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+          style={{
+            clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)'
+          }}
+        />
+      </div>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleSchema) }} />
+
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-16 text-center">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mx-auto max-w-3xl">
+          <Badge variant="secondary" className="mb-6 font-mono text-xs uppercase tracking-widest text-teal bg-teal/10 hover:bg-teal/20">
+            Bittensor Subnet
+          </Badge>
+          <h1 className="mt-4 text-5xl font-extrabold tracking-tight text-ink sm:text-7xl">
             Zapier for Subnets
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-[--color-ink-secondary]">
-            The Intelligence Layer for Multi-Subnet Composition. Turn any complex AI task into an optimized multi-subnet workflow.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-secondary sm:text-xl">
+            The Intelligence Layer for Multi-Subnet Composition. Turn any complex AI task into an optimized multi-subnet workflow effortlessly.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
-            <Link href="/submit" className="rounded-lg bg-[--color-teal] px-6 py-2.5 text-sm font-medium text-[--color-canvas] transition-opacity hover:opacity-90">
-              Try a Task
-            </Link>
-            <Link href="/dashboard" className="rounded-lg border border-[--color-border-emphasis] px-6 py-2.5 text-sm font-medium text-[--color-ink-secondary] transition-colors hover:text-[--color-ink]">
-              View Network
-            </Link>
+          <div className="mt-10 flex items-center justify-center gap-4">
+            <Button size="lg" asChild className="rounded-full px-8 text-base shadow-lg shadow-teal/20">
+              <Link href="/submit">Try a Task</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="rounded-full px-8 text-base bg-surface-0/50 backdrop-blur-md">
+              <Link href="/dashboard">View Network</Link>
+            </Button>
           </div>
         </motion.div>
       </section>
 
       {/* How It Works */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">How It Works</h2>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <div className="text-center">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-teal">How It Works</h2>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Decentralized Orchestration</p>
+        </div>
+        <div className="mx-auto mt-12 grid max-w-6xl gap-6 md:grid-cols-3">
           {steps.map((step, i) => (
             <motion.div
               key={step.num}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.2, duration: 0.6 }}
+              className="group relative rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-lg transition-all hover:shadow-xl hover:border-teal/30 hover:-translate-y-1"
             >
-              <span className={`font-mono text-2xl font-bold ${step.color}`}>{step.num}</span>
-              <h3 className="mt-3 text-lg font-semibold text-[--color-ink]">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[--color-ink-secondary]">{step.desc}</p>
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-teal/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+              <span className={`inline-block font-mono text-3xl font-black ${step.color}`}>{step.num}</span>
+              <h3 className="mt-4 text-xl font-bold text-ink">{step.title}</h3>
+              <p className="mt-3 leading-relaxed text-ink-secondary">{step.desc}</p>
             </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Workflow Examples */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Orchestration Examples</h2>
-        <div className="mt-8 overflow-x-auto rounded-lg border border-[--color-border] bg-[--color-surface-0]">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-[--color-border] bg-[--color-surface-1]">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-[--color-ink]">Workflow</th>
-                <th className="px-6 py-4 font-semibold text-[--color-ink]">Trigger</th>
-                <th className="px-6 py-4 font-semibold text-[--color-ink]">Subnet Path</th>
-                <th className="px-6 py-4 font-semibold text-[--color-ink]">Final Result</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[--color-border]">
-              {workflows.map((wf) => (
-                <tr key={wf.name} className="transition-colors hover:bg-[--color-surface-1]">
-                  <td className="px-6 py-4 font-medium text-[--color-teal]">{wf.name}</td>
-                  <td className="px-6 py-4 text-[--color-ink-secondary]">{wf.trigger}</td>
-                  <td className="px-6 py-4 font-mono text-xs text-[--color-ink-tertiary]">{wf.path}</td>
-                  <td className="px-6 py-4 text-[--color-ink-secondary]">{wf.result}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <div className="text-center">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-teal">Orchestration Examples</h2>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Real-world AI Workflows</p>
         </div>
-      </section>
+        <div className="mx-auto mt-12 max-w-6xl overflow-hidden rounded-2xl border border-border bg-surface-0/80 shadow-sm backdrop-blur-md">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-surface-1 font-medium text-ink">
+                <tr>
+                  <th className="px-6 py-4">Workflow</th>
+                  <th className="px-6 py-4">Trigger</th>
+                  <th className="px-6 py-4">Subnet Path</th>
+                  <th className="px-6 py-4">Final Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {workflows.map((wf) => (
+                  <tr key={wf.name} className="transition-colors hover:bg-surface-1/50">
+                    <td className="px-6 py-5 font-semibold text-teal">{wf.name}</td>
+                    <td className="px-6 py-5 text-ink-secondary">{wf.trigger}</td>
+                    <td className="px-6 py-5 font-mono text-xs text-ink-tertiary">
+                      <Badge variant="outline" className="font-mono">{wf.path}</Badge>
+                    </td>
+                    <td className="px-6 py-5 font-medium text-ink-secondary">{wf.result}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </motion.section>
 
       {/* Scoring Formula */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Scoring Formula</h2>
-        <div className="mx-auto mt-4 max-w-2xl rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
-          <p className="text-center font-mono text-sm text-[--color-ink-secondary]">
-            S = 0.50 x Success + 0.25 x Cost + 0.15 x Latency + 0.10 x Reliability
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-teal">Scoring Formula</h2>
+        <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-border bg-surface-0/80 p-6 shadow-sm backdrop-blur-md">
+          <p className="text-center font-mono text-base font-semibold text-ink">
+            Score <span className="text-ink-secondary font-normal">=</span> 0.50<span className="text-ink-secondary font-normal">x</span>Success + 0.25<span className="text-ink-secondary font-normal">x</span>Cost + 0.15<span className="text-ink-secondary font-normal">x</span>Latency + 0.10<span className="text-ink-secondary font-normal">x</span>Reliability
           </p>
         </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {scoreDimensions.map((dim) => (
-            <div key={dim.label} className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-4">
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${dim.color}`} />
-                <span className="text-sm font-medium text-[--color-ink]">{dim.label}</span>
-                <span className="ml-auto font-mono text-xs text-[--color-ink-tertiary]">{dim.weight}</span>
+        <div className="mx-auto mt-6 grid max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {scoreDimensions.map((dim, i) => (
+            <motion.div 
+              key={dim.label} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="rounded-xl border border-border bg-surface-0/50 p-5 shadow-sm transition-colors hover:bg-surface-1/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`h-2.5 w-2.5 rounded-full ${dim.color} shadow-sm`} />
+                <span className="font-bold text-ink">{dim.label}</span>
+                <span className="ml-auto font-mono text-sm font-medium text-ink-secondary">{dim.weight}</span>
               </div>
-              <p className="mt-2 text-xs leading-relaxed text-[--color-ink-secondary]">{dim.desc}</p>
-            </div>
+              <p className="mt-3 text-sm leading-relaxed text-ink-tertiary">{dim.desc}</p>
+            </motion.div>
           ))}
         </div>
-        <p className="mt-4 text-center text-xs text-[--color-ink-tertiary]">
-          Success gate: Cost &amp; latency only count if success &gt; 70%
+        <p className="mt-6 text-center text-xs font-medium text-ink-tertiary">
+          * Success gate: Cost &amp; latency only count if success &gt; 70%
         </p>
-      </section>
+      </motion.section>
 
       {/* Emission Structure */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Emission Structure</h2>
-        <div className="mx-auto mt-6 max-w-lg">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-teal">Emission Structure</h2>
+        <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md">
           <EmissionSankey />
         </div>
-        <p className="mt-4 text-center text-xs text-[--color-ink-secondary]">
+        <p className="mt-6 text-center text-sm text-ink-secondary">
           dTAO Alpha token model — TAO injected into AMM pool, Alpha distributed via Yuma Consensus
         </p>
-      </section>
+      </motion.section>
 
       {/* Network Stats */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Network Stats</h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-teal">Network Stats</h2>
+        <div className="mx-auto mt-8 grid max-w-6xl gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard label="Active Miners" value={mockNetworkStats.active_miners} accent />
           <StatCard label="Active Validators" value={mockNetworkStats.active_validators} />
           <StatCard label="Tasks Evaluated" value={mockNetworkStats.tasks_evaluated} accent />
           <StatCard label="Current Tempo" value={mockNetworkStats.current_tempo} sublabel={`${mockNetworkStats.current_tempo} x 360 blocks`} />
           <StatCard label="Current Block" value={mockNetworkStats.current_block} />
         </div>
-      </section>
-
-      {/* Python Interaction Snippet */}
-      {/* <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Developer Integration</h2>
-        <div className="mx-auto mt-8 max-w-3xl rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
-          <div className="flex items-center justify-between border-b border-[--color-border] pb-4">
-            <span className="font-mono text-xs text-[--color-ink-tertiary]">pip install bittensor</span>
-            <span className="rounded bg-[--color-teal]/10 px-2 py-1 text-[10px] uppercase text-[--color-teal]">Python 3.10+</span>
-          </div>
-          <pre className="mt-6 overflow-x-auto font-mono text-sm leading-relaxed text-[--color-ink-secondary]">
-{`import bittensor as bt
-from cswon.protocol import WorkflowSynapse
-
-wallet = bt.wallet(name="my_wallet")
-dendrite = bt.dendrite(wallet=wallet)
-metagraph = bt.metagraph(netuid=NETUID)
-
-# Query the top-performing miner for a workflow plan
-miner_axon = metagraph.axons[top_miner_uid]
-synapse = WorkflowSynapse(
-    description="Analyze 2024 AI trends and generate a summary report.",
-    constraints={"max_budget_tao": 0.1, "max_latency_seconds": 30}
-)
-
-response = await dendrite.forward(axons=[miner_axon], synapse=synapse)
-print("Workflow Plan:", response.workflow_plan)`}
-          </pre>
-        </div>
-      </section> */}
+      </motion.section>
 
       {/* FAQ Section */}
-      <section>
-        <h2 className="text-center text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Frequently Asked Questions</h2>
-        <div className="mx-auto mt-8 max-w-2xl divide-y divide-[--color-border]">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-teal">FAQ</h2>
+        <div className="mx-auto mt-10 max-w-3xl divide-y divide-border">
           {faqs.map((faq) => (
             <div key={faq.q} className="py-6">
-              <h3 className="text-lg font-semibold text-[--color-ink]">{faq.q}</h3>
-              <p className="mt-2 text-[--color-ink-secondary]">{faq.a}</p>
+              <h3 className="text-xl font-bold text-ink">{faq.q}</h3>
+              <p className="mt-3 text-lg text-ink-secondary">{faq.a}</p>
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Footer */}
-      <footer className="border-t border-[--color-border] pt-8 text-center text-xs text-[--color-ink-tertiary]">
-        <div className="flex items-center justify-center gap-6">
-          <a href="https://github.com/adysingh5711/C-SWON" target="_blank" rel="noopener noreferrer" className="hover:text-[--color-ink-secondary]">GitHub</a>
-          <a href="https://docs.learnbittensor.org" target="_blank" rel="noopener noreferrer" className="hover:text-[--color-ink-secondary]">Bittensor Docs</a>
-          <span className="text-[--color-ink-muted]">Whitepaper (upcoming)</span>
+      <footer className="mx-auto mt-20 max-w-6xl border-t border-border pt-10 text-center text-sm text-ink-tertiary pb-6">
+        <div className="flex items-center justify-center gap-8">
+          <a href="https://github.com/adysingh5711/C-SWON" target="_blank" rel="noopener noreferrer" className="font-medium transition-colors hover:text-ink">GitHub</a>
+          <a href="https://docs.learnbittensor.org" target="_blank" rel="noopener noreferrer" className="font-medium transition-colors hover:text-ink">Bittensor Docs</a>
+          <span className="font-medium text-ink-muted">Whitepaper (upcoming)</span>
         </div>
-        <p className="mt-4">C-SWON — Cross-Subnet Workflow Orchestration Network</p>
+        <p className="mt-6">C-SWON — Cross-Subnet Workflow Orchestration Network</p>
       </footer>
     </div>
   );
