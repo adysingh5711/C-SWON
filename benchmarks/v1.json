@@ -44,10 +44,535 @@
     }
   },
   {
+    "task_id": "code_002",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a binary search function that returns the index of a target in a sorted list, or -1 if not found.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_binary_search():\n    from solution import binary_search\n    assert binary_search([1,3,5,7,9], 5) == 2\n    assert binary_search([1,3,5,7,9], 4) == -1\n    assert binary_search([], 1) == -1\n    assert binary_search([42], 42) == 0",
+      "expected_patterns": [
+        "def binary_search",
+        "mid",
+        "low",
+        "high"
+      ]
+    }
+  },
+  {
+    "task_id": "code_003",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that checks whether a given string is a valid palindrome, ignoring spaces and case.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_palindrome():\n    from solution import is_palindrome\n    assert is_palindrome('racecar') is True\n    assert is_palindrome('A man a plan a canal Panama') is True\n    assert is_palindrome('hello') is False\n    assert is_palindrome('') is True",
+      "expected_patterns": [
+        "def is_palindrome",
+        "lower",
+        "replace",
+        "=="
+      ]
+    }
+  },
+  {
+    "task_id": "code_004",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a stack class with push, pop, peek, and is_empty methods.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.025,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_stack():\n    from solution import Stack\n    s = Stack()\n    assert s.is_empty() is True\n    s.push(10)\n    s.push(20)\n    assert s.peek() == 20\n    assert s.pop() == 20\n    assert s.pop() == 10\n    assert s.is_empty() is True",
+      "expected_patterns": [
+        "class Stack",
+        "def push",
+        "def pop",
+        "def peek",
+        "def is_empty"
+      ]
+    }
+  },
+  {
+    "task_id": "code_005",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that returns the longest common prefix of a list of strings.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.018,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_lcp():\n    from solution import longest_common_prefix\n    assert longest_common_prefix(['flower','flow','flight']) == 'fl'\n    assert longest_common_prefix(['dog','racecar','car']) == ''\n    assert longest_common_prefix(['same','same','same']) == 'same'\n    assert longest_common_prefix([]) == ''",
+      "expected_patterns": [
+        "def longest_common_prefix",
+        "zip",
+        "prefix"
+      ]
+    }
+  },
+  {
+    "task_id": "code_006",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that flattens a nested list of arbitrary depth into a single list.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_flatten():\n    from solution import flatten\n    assert flatten([1,[2,[3,[4]]]]) == [1,2,3,4]\n    assert flatten([]) == []\n    assert flatten([1,2,3]) == [1,2,3]\n    assert flatten([[1,2],[3,[4,5]]]) == [1,2,3,4,5]",
+      "expected_patterns": [
+        "def flatten",
+        "isinstance",
+        "list",
+        "extend"
+      ]
+    }
+  },
+  {
+    "task_id": "code_007",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that groups a list of words by their anagram equivalence class.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.025,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_group_anagrams():\n    from solution import group_anagrams\n    result = group_anagrams(['eat','tea','tan','ate','nat','bat'])\n    assert len(result) == 3\n    assert sorted(['eat','tea','ate']) in [sorted(g) for g in result]\n    assert group_anagrams([]) == []",
+      "expected_patterns": [
+        "def group_anagrams",
+        "sorted",
+        "dict",
+        "defaultdict"
+      ]
+    }
+  },
+  {
+    "task_id": "code_008",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function to compute the GCD of two positive integers using the Euclidean algorithm.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_gcd():\n    from solution import gcd\n    assert gcd(48, 18) == 6\n    assert gcd(100, 25) == 25\n    assert gcd(1, 1) == 1\n    assert gcd(7, 13) == 1",
+      "expected_patterns": [
+        "def gcd",
+        "while",
+        "%",
+        "remainder"
+      ]
+    }
+  },
+  {
+    "task_id": "code_009",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that converts a Roman numeral string to an integer.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.022,
+      "max_latency_seconds": 14,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_roman_to_int():\n    from solution import roman_to_int\n    assert roman_to_int('III') == 3\n    assert roman_to_int('IV') == 4\n    assert roman_to_int('IX') == 9\n    assert roman_to_int('LVIII') == 58\n    assert roman_to_int('MCMXCIV') == 1994",
+      "expected_patterns": [
+        "def roman_to_int",
+        "dict",
+        "I",
+        "V",
+        "X",
+        "L"
+      ]
+    }
+  },
+  {
+    "task_id": "code_010",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a queue using two stacks. Support enqueue and dequeue operations in amortized O(1).",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.03,
+      "max_latency_seconds": 18,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_queue_from_stacks():\n    from solution import QueueFromStacks\n    q = QueueFromStacks()\n    q.enqueue(1)\n    q.enqueue(2)\n    q.enqueue(3)\n    assert q.dequeue() == 1\n    assert q.dequeue() == 2\n    q.enqueue(4)\n    assert q.dequeue() == 3\n    assert q.dequeue() == 4",
+      "expected_patterns": [
+        "class QueueFromStacks",
+        "def enqueue",
+        "def dequeue",
+        "stack"
+      ]
+    }
+  },
+  {
+    "task_id": "code_011",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that given an array of integers returns all unique triplets that sum to zero.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.025,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_three_sum():\n    from solution import three_sum\n    result = three_sum([-1,0,1,2,-1,-4])\n    assert sorted([sorted(t) for t in result]) == [[-1,-1,2],[-1,0,1]]\n    assert three_sum([]) == []\n    assert three_sum([0,0,0]) == [[0,0,0]]",
+      "expected_patterns": [
+        "def three_sum",
+        "sort",
+        "two pointer",
+        "set"
+      ]
+    }
+  },
+  {
+    "task_id": "code_012",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a min-heap data structure with insert and extract_min operations.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.03,
+      "max_latency_seconds": 18,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_min_heap():\n    from solution import MinHeap\n    h = MinHeap()\n    for v in [5, 3, 8, 1, 4]:\n        h.insert(v)\n    assert h.extract_min() == 1\n    assert h.extract_min() == 3\n    assert h.extract_min() == 4",
+      "expected_patterns": [
+        "class MinHeap",
+        "def insert",
+        "def extract_min",
+        "_heapify"
+      ]
+    }
+  },
+  {
+    "task_id": "code_013",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that validates a Sudoku board (9x9 grid). Partial boards are valid if no row, column, or 3x3 box contains duplicate digits 1\u20139.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.025,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_valid_sudoku():\n    from solution import is_valid_sudoku\n    board = [\n        ['5','3','.','.','7','.','.','.','.'],\n        ['6','.','.','1','9','5','.','.','.'],\n        ['.','9','8','.','.','.','.','6','.'],\n        ['8','.','.','.','6','.','.','.','3'],\n        ['4','.','.','8','.','3','.','.','1'],\n        ['7','.','.','.','2','.','.','.','6'],\n        ['.','6','.','.','.','.','2','8','.'],\n        ['.','.','.','4','1','9','.','.','5'],\n        ['.','.','.','.','8','.','.','7','9'],\n    ]\n    assert is_valid_sudoku(board) is True",
+      "expected_patterns": [
+        "def is_valid_sudoku",
+        "set",
+        "row",
+        "col",
+        "box"
+      ]
+    }
+  },
+  {
     "task_id": "rag_001",
     "task_type": "rag",
     "status": "active",
-    "description": "What is Bittensor's consensus mechanism and how does Yuma Consensus differ from standard PoW?",
+    "description": "What is Bittensor's consensus mechanism and how does Yuma Consensus differ from standard Proof-of-Work?",
     "quality_criteria": {
       "min_rouge_l": 0.3
     },
@@ -73,15 +598,422 @@
       }
     },
     "reference": {
-      "reference_answer": "Bittensor uses Yuma Consensus which is a stake-weighted agreement mechanism where validators assign scores to miners. Unlike PoW which requires energy expenditure, Yuma Consensus rewards useful machine learning work evaluated by validator peers."
+      "reference_answer": "Bittensor uses Yuma Consensus, a stake-weighted agreement mechanism where validators assign scores to miners based on the quality of their outputs. Unlike Proof-of-Work, which requires energy-intensive computation to solve arbitrary puzzles, Yuma Consensus rewards useful machine-learning or computational work evaluated by validator peers who hold stake in the network."
+    }
+  },
+  {
+    "task_id": "rag_002",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Explain the role of subnets in the Bittensor ecosystem and how incentives flow between subnet owners, validators, and miners.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Subnets are specialized sub-networks within Bittensor, each defining its own task domain and scoring rules. Subnet owners set hyperparameters and emit Alpha tokens; validators query miners and set weights based on performance; miners compete to produce the best outputs and earn emissions proportional to their weight in the subnet."
+    }
+  },
+  {
+    "task_id": "rag_003",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is a DAG (Directed Acyclic Graph) and how is it used to represent computational workflows?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.008,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn18"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn18": {
+        "type": "inference",
+        "avg_cost": 0.0005,
+        "avg_latency": 0.3
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "A DAG is a graph with directed edges and no cycles, making it ideal for representing ordered computations where each node depends on its predecessors. In workflow orchestration, each DAG node represents a task or service call, and edges encode data flow and execution dependencies. This structure enables parallel execution of independent branches and clear dependency tracking."
+    }
+  },
+  {
+    "task_id": "rag_004",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Describe the transformer architecture and explain the role of self-attention in language models.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn18"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn18": {
+        "type": "inference",
+        "avg_cost": 0.0005,
+        "avg_latency": 0.3
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "The transformer is a neural network architecture that processes sequences in parallel using attention mechanisms rather than recurrence. Self-attention allows each token to attend to every other token in the sequence, computing weighted sums of value vectors guided by query-key similarity. This enables the model to capture long-range dependencies efficiently and is the foundation of modern large language models."
+    }
+  },
+  {
+    "task_id": "rag_005",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is retrieval-augmented generation (RAG) and how does it improve language model outputs?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Retrieval-augmented generation combines a retrieval system with a generative language model: at inference time, relevant documents are fetched from an external corpus and provided as context alongside the user query. This grounding reduces hallucination, keeps knowledge up-to-date without retraining, and allows the model to cite sources, significantly improving factual accuracy on knowledge-intensive tasks."
+    }
+  },
+  {
+    "task_id": "rag_006",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Explain how Byzantine fault tolerance works in distributed systems and why it matters for blockchain networks.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Byzantine fault tolerance (BFT) allows a distributed system to reach consensus even when some nodes behave arbitrarily or maliciously. Classic BFT protocols tolerate up to one-third of nodes being Byzantine. In blockchain networks, BFT-inspired mechanisms prevent double-spending and ensure that all honest participants agree on the canonical chain state, which is critical for financial integrity and trustlessness."
+    }
+  },
+  {
+    "task_id": "rag_007",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is gradient descent and how do adaptive optimizers like Adam improve upon vanilla SGD?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1",
+        "sn18"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn18": {
+        "type": "inference",
+        "avg_cost": 0.0005,
+        "avg_latency": 0.3
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Gradient descent updates model parameters by stepping in the direction of the negative gradient of the loss function. Vanilla SGD uses a fixed learning rate, which can lead to slow convergence or oscillation. Adam combines momentum (first moment) with adaptive per-parameter learning rates (second moment), allowing faster convergence and better handling of sparse gradients."
+    }
+  },
+  {
+    "task_id": "rag_008",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Describe the CAP theorem and its implications for distributed database design.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "The CAP theorem states that a distributed system can simultaneously guarantee at most two of: Consistency, Availability, and Partition tolerance. Since network partitions are unavoidable in practice, designers must choose between strong consistency (sacrificing availability during partitions) or high availability (allowing stale reads during partitions). This trade-off shapes the design of systems like Cassandra (AP) versus HBase (CP)."
+    }
+  },
+  {
+    "task_id": "rag_009",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What are zero-knowledge proofs and how can they be used to enhance privacy in blockchain transactions?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Zero-knowledge proofs allow a prover to convince a verifier that a statement is true without revealing any information beyond the truth of the statement. In blockchains, ZK proofs enable private transactions: a user can prove they have sufficient funds or valid credentials without exposing balances or identity. ZK-SNARKs and ZK-STARKs are practical constructions used in systems like Zcash and StarkNet."
+    }
+  },
+  {
+    "task_id": "rag_010",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Explain the difference between vertical and horizontal scaling in cloud infrastructure.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.008,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Vertical scaling (scale-up) means increasing the resources of a single server, such as adding more CPU cores or RAM. Horizontal scaling (scale-out) means adding more servers and distributing the load across them. Horizontal scaling is generally more fault-tolerant and cost-effective at large scale but requires stateless application design and a load balancer; vertical scaling is simpler but has hardware limits and creates a single point of failure."
+    }
+  },
+  {
+    "task_id": "rag_011",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is federated learning and how does it protect user data privacy while training machine learning models?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1",
+        "sn18"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn18": {
+        "type": "inference",
+        "avg_cost": 0.0005,
+        "avg_latency": 0.3
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Federated learning trains a shared model across many devices without centralizing raw data. Each device trains locally on its own data and sends only model updates (gradients or weights) to a central aggregator. This keeps personal data on-device, reducing privacy risk. Techniques like differential privacy and secure aggregation further prevent the aggregator from inferring individual contributions."
+    }
+  },
+  {
+    "task_id": "rag_012",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Describe how IPFS (InterPlanetary File System) stores and retrieves content, and how it differs from traditional HTTP.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "IPFS uses content-addressed storage: files are identified by their cryptographic hash (CID) rather than by location. When you request a CID, IPFS retrieves it from any peer that has it, enabling decentralized, resilient storage. In contrast, HTTP retrieves files from a specific server URL; if that server goes down, the content becomes unavailable. IPFS also deduplicates identical content and makes data persist as long as at least one node pins it."
     }
   },
   {
     "task_id": "agent_001",
     "task_type": "agent",
-    "status": "deprecated",
-    "description": "Calculate compound interest for principal 1000, rate 5%, 3 years compounded annually. Return only the final amount.",
-    "quality_criteria": {},
+    "status": "active",
+    "description": "Calculate the compound interest on a principal of $5,000 at 6% annual rate compounded quarterly for 3 years. Report the final amount.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
     "constraints": {
       "max_budget_tao": 0.01,
       "max_latency_seconds": 10,
@@ -107,20 +1039,81 @@
       "goal_checklist": [
         {
           "type": "regex",
-          "pattern": "1157\\.625|1157\\.63|1157\\.6"
+          "pattern": "5955\\.\\d+|5956\\.\\d+"
+        },
+        {
+          "type": "keyword",
+          "value": "compound"
         }
       ]
-    },
-    "deprecation_reason": "auto-lifecycle"
+    }
   },
   {
-    "task_id": "data_001",
-    "task_type": "data_transform",
-    "status": "deprecated",
-    "description": "Convert this CSV row to JSON: name,age,city\nAlice,30,Delhi",
-    "quality_criteria": {},
+    "task_id": "agent_002",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Identify the three largest countries by land area and list them in descending order with their approximate areas in km\u00b2.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
     "constraints": {
-      "max_budget_tao": 0.005,
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 20,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "Russia"
+        },
+        {
+          "type": "keyword",
+          "value": "Canada"
+        },
+        {
+          "type": "keyword",
+          "value": "United States"
+        },
+        {
+          "type": "regex",
+          "pattern": "17[,\\s]?\\d{3}"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_003",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Convert the temperature 37.5\u00b0C to both Fahrenheit and Kelvin. Provide both results.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.008,
       "max_latency_seconds": 8,
       "allowed_subnets": [
         "sn1"
@@ -141,17 +1134,984 @@
       }
     },
     "reference": {
-      "expected_output": "{\"name\": \"Alice\", \"age\": \"30\", \"city\": \"Delhi\"}"
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "99\\.5"
+        },
+        {
+          "type": "regex",
+          "pattern": "310\\.6|310\\.65"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_004",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Given the sequence 2, 6, 18, 54, \u2026, identify the pattern and compute the 8th term.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
     },
-    "deprecation_reason": "auto-lifecycle"
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "4374"
+        },
+        {
+          "type": "keyword",
+          "value": "geometric"
+        },
+        {
+          "type": "regex",
+          "pattern": "ratio.*3|3.*ratio|multiply.*3|3.*multiply"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_005",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Summarize the key steps to deploy a containerized Python web application on Kubernetes, covering at minimum: Docker image build, push, Deployment manifest, and Service manifest.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 20,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "docker build"
+        },
+        {
+          "type": "keyword",
+          "value": "docker push"
+        },
+        {
+          "type": "keyword",
+          "value": "Deployment"
+        },
+        {
+          "type": "keyword",
+          "value": "Service"
+        },
+        {
+          "type": "keyword",
+          "value": "kubectl apply"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_006",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Calculate the SHA-256 hash of the string 'bittensor' and report the first 16 hex characters.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "[0-9a-f]{16}"
+        },
+        {
+          "type": "keyword",
+          "value": "sha"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_007",
+    "task_type": "agent",
+    "status": "active",
+    "description": "List the prime numbers between 50 and 100, then compute their sum.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "53"
+        },
+        {
+          "type": "keyword",
+          "value": "59"
+        },
+        {
+          "type": "keyword",
+          "value": "61"
+        },
+        {
+          "type": "keyword",
+          "value": "67"
+        },
+        {
+          "type": "keyword",
+          "value": "71"
+        },
+        {
+          "type": "keyword",
+          "value": "73"
+        },
+        {
+          "type": "keyword",
+          "value": "79"
+        },
+        {
+          "type": "keyword",
+          "value": "83"
+        },
+        {
+          "type": "keyword",
+          "value": "89"
+        },
+        {
+          "type": "keyword",
+          "value": "97"
+        },
+        {
+          "type": "regex",
+          "pattern": "712"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_008",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Describe the steps required to implement OAuth2 authorization code flow for a web application, including redirect URI handling and token exchange.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 18,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "authorization code"
+        },
+        {
+          "type": "keyword",
+          "value": "redirect"
+        },
+        {
+          "type": "keyword",
+          "value": "access token"
+        },
+        {
+          "type": "keyword",
+          "value": "client secret"
+        },
+        {
+          "type": "keyword",
+          "value": "scope"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_009",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Solve the system of linear equations: 3x + 2y = 12, x - y = 1. Report the values of x and y.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.008,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "x\\s*=\\s*2|x\\s*=\\s*14/5"
+        },
+        {
+          "type": "regex",
+          "pattern": "y\\s*=\\s*3|y\\s*=\\s*9/5"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_010",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Outline the key differences between REST and GraphQL APIs, covering response shape, over-fetching, and tooling.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "REST"
+        },
+        {
+          "type": "keyword",
+          "value": "GraphQL"
+        },
+        {
+          "type": "keyword",
+          "value": "over-fetching"
+        },
+        {
+          "type": "keyword",
+          "value": "schema"
+        },
+        {
+          "type": "keyword",
+          "value": "query"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_011",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Compute the determinant of the 3x3 matrix [[2,1,3],[0,4,1],[5,2,0]] and report the result.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "-\\s*39|-39"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_012",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Describe how to set up a Python virtual environment, install dependencies from requirements.txt, and run a pytest test suite.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "python -m venv"
+        },
+        {
+          "type": "keyword",
+          "value": "activate"
+        },
+        {
+          "type": "keyword",
+          "value": "pip install"
+        },
+        {
+          "type": "keyword",
+          "value": "requirements.txt"
+        },
+        {
+          "type": "keyword",
+          "value": "pytest"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "agent_013",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Find the area under the curve f(x) = x\u00b2 from x=0 to x=3 using integration, and verify using the trapezoidal rule with n=6 intervals.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "9\\.0|9\\.00"
+        },
+        {
+          "type": "keyword",
+          "value": "trapezoidal"
+        },
+        {
+          "type": "regex",
+          "pattern": "antiderivative|x\\^3|x\u00b3"
+        }
+      ]
+    }
+  },
+  {
+    "task_id": "data_001",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Convert this CSV row to JSON: name,age,city\nAlice,30,Delhi",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.005,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "{\"name\": \"Alice\", \"age\": \"30\", \"city\": \"Delhi\"}"
+    }
+  },
+  {
+    "task_id": "data_002",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Sort the following list of integers in ascending order and return as a comma-separated string: [42, 7, 19, 3, 88, 1]",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.004,
+      "max_latency_seconds": 6,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "1,3,7,19,42,88"
+    }
+  },
+  {
+    "task_id": "data_003",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Extract all email addresses from the following text and return them as a JSON array: 'Contact us at support@example.com or sales@acme.org for help.'",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.006,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "[\"support@example.com\", \"sales@acme.org\"]"
+    }
+  },
+  {
+    "task_id": "data_004",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Compute the word frequency map for the string 'the cat sat on the mat the cat' and return as JSON sorted by key.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.005,
+      "max_latency_seconds": 7,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "{\"cat\": 2, \"mat\": 1, \"on\": 1, \"sat\": 1, \"the\": 3}"
+    }
+  },
+  {
+    "task_id": "data_005",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Flatten and deduplicate the nested list [[1,2,3],[2,3,4],[4,5]] into a sorted unique list, returning as a JSON array.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.004,
+      "max_latency_seconds": 6,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "[1, 2, 3, 4, 5]"
+    }
+  },
+  {
+    "task_id": "data_006",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Convert the following XML to JSON: <person><name>Bob</name><age>25</age></person>",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.006,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "{\"person\": {\"name\": \"Bob\", \"age\": \"25\"}}"
+    }
+  },
+  {
+    "task_id": "data_007",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Given the JSON array [{\"score\": 80}, {\"score\": 95}, {\"score\": 70}], compute the average score and return as a float with 2 decimal places.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.004,
+      "max_latency_seconds": 6,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "81.67"
+    }
+  },
+  {
+    "task_id": "data_008",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Normalize the string 'Hello,  World!  This  is   a   test.' by collapsing multiple spaces to a single space and trimming leading/trailing whitespace.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.004,
+      "max_latency_seconds": 6,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "Hello, World! This is a test."
+    }
+  },
+  {
+    "task_id": "data_009",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Convert this JSON to a pipe-delimited table (header + 1 row): [{\"id\": 1, \"product\": \"Widget\", \"price\": 9.99}]",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.005,
+      "max_latency_seconds": 7,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "id|product|price\n1|Widget|9.99"
+    }
+  },
+  {
+    "task_id": "data_010",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Given the list [3, 1, 4, 1, 5, 9, 2, 6, 5, 3], return the top-3 most frequent elements as a JSON array sorted by frequency descending then value ascending.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.005,
+      "max_latency_seconds": 7,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "[1, 3, 5]"
+    }
+  },
+  {
+    "task_id": "data_011",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Decode the Base64 string 'SGVsbG8sIFdvcmxkIQ==' and return the plaintext.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.003,
+      "max_latency_seconds": 5,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "Hello, World!"
+    }
+  },
+  {
+    "task_id": "data_012",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Given the camelCase string 'getUserProfileDataByEmail', convert it to snake_case.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.003,
+      "max_latency_seconds": 5,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "get_user_profile_data_by_email"
+    }
   },
   {
     "task_id": "synthetic_001",
     "task_type": "code",
     "status": "active",
-    "type": "synthetic",
-    "description": "Implement a function that returns the nth Fibonacci number using memoization.",
-    "quality_criteria": {},
+    "description": "Implement a Python function that merges two sorted lists into one sorted list using a generator-based approach.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
     "constraints": {
       "max_budget_tao": 0.02,
       "max_latency_seconds": 15,
@@ -180,12 +2140,11 @@
       }
     },
     "reference": {
-      "test_suite": "def test_fib():\n    from solution import fib\n    assert fib(1)==1\n    assert fib(10)==55\n    assert fib(20)==6765",
+      "test_suite": "def test_merge():\n    from solution import merge_sorted\n    assert merge_sorted([1,3,5],[2,4,6]) == [1,2,3,4,5,6]\n    assert merge_sorted([],[1]) == [1]\n    assert merge_sorted([],[]) == []",
       "expected_patterns": [
-        "memo",
-        "cache",
-        "lru_cache",
-        "dict"
+        "def merge_sorted",
+        "while",
+        "append"
       ],
       "optimal_workflow": {
         "nodes": [
@@ -207,6 +2166,602 @@
           }
         ]
       }
-    }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_002",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a recursive binary search function that returns the index of a target in a sorted list, or -1 if not found.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_binary_search():\n    from solution import binary_search\n    assert binary_search([1,3,5,7,9], 5) == 2\n    assert binary_search([1,3,5,7,9], 4) == -1\n    assert binary_search([], 1) == -1\n    assert binary_search([42], 42) == 0",
+      "expected_patterns": [
+        "def binary_search",
+        "mid",
+        "low",
+        "high"
+      ],
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn4",
+            "action": "generate_code"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "review_code"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_003",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is topological sort and how is it applied to schedule tasks in a DAG-based workflow engine?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.008,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn18"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn18": {
+        "type": "inference",
+        "avg_cost": 0.0005,
+        "avg_latency": 0.3
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Topological sort produces a linear ordering of DAG nodes such that every node appears before all nodes it has an edge to. In workflow engines, topological sort determines the safe execution order of tasks respecting all data dependencies. It is computed via DFS post-order or Kahn's algorithm and detects cycles that would make scheduling impossible.",
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn1",
+            "action": "retrieve_context"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "generate_answer"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_004",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Calculate the compound interest on a principal of $10,000 at 4% annual rate compounded monthly for 2 years. Report the final amount.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "regex",
+          "pattern": "10832\\.\\d+|10833\\.\\d+"
+        },
+        {
+          "type": "keyword",
+          "value": "compound"
+        }
+      ],
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn1",
+            "action": "compute"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "format_output"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_005",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Convert this CSV row to JSON: id,username,email\n42,jdoe,jdoe@example.com",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.005,
+      "max_latency_seconds": 8,
+      "allowed_subnets": [
+        "sn1",
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "{\"id\": \"42\", \"username\": \"jdoe\", \"email\": \"jdoe@example.com\"}",
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn13",
+            "action": "parse_csv"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn13",
+            "action": "serialize_json"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_006",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement an iterative (non-recursive) function that flattens a nested list of arbitrary depth into a single list.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 12,
+      "allowed_subnets": [
+        "sn1",
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_flatten():\n    from solution import flatten\n    assert flatten([1,[2,[3,[4]]]]) == [1,2,3,4]\n    assert flatten([]) == []\n    assert flatten([1,2,3]) == [1,2,3]\n    assert flatten([[1,2],[3,[4,5]]]) == [1,2,3,4,5]",
+      "expected_patterns": [
+        "def flatten",
+        "isinstance",
+        "list",
+        "extend"
+      ],
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn4",
+            "action": "generate_code"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "review_logic"
+          },
+          {
+            "id": "step_3",
+            "subnet": "sn4",
+            "action": "generate_tests"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          },
+          {
+            "from": "step_2",
+            "to": "step_3"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_007",
+    "task_type": "rag",
+    "status": "active",
+    "description": "How do vector databases enable semantic search in RAG systems, and what embedding models are commonly used?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 15,
+      "allowed_subnets": [
+        "sn1",
+        "sn22"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      },
+      "sn22": {
+        "type": "web_access",
+        "avg_cost": 0.002,
+        "avg_latency": 1.0
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Vector databases store high-dimensional embedding vectors and support approximate nearest-neighbour search. In RAG pipelines, documents are encoded into vectors at index time and queries are encoded at retrieval time; the most semantically similar document embeddings are returned as context. Common embedding models include OpenAI Ada, Sentence-BERT, and E5-large.",
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn22",
+            "action": "fetch_docs"
+          },
+          {
+            "id": "step_1b",
+            "subnet": "sn18",
+            "action": "embed"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "generate_answer"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_1b"
+          },
+          {
+            "from": "step_1b",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_008",
+    "task_type": "agent",
+    "status": "active",
+    "description": "List the prime numbers between 100 and 150, then compute their sum.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn1"
+      ]
+    },
+    "available_tools": {
+      "sn1": {
+        "type": "text_generation",
+        "avg_cost": 0.001,
+        "avg_latency": 0.5
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {
+          "type": "keyword",
+          "value": "101"
+        },
+        {
+          "type": "keyword",
+          "value": "103"
+        },
+        {
+          "type": "keyword",
+          "value": "107"
+        },
+        {
+          "type": "keyword",
+          "value": "109"
+        },
+        {
+          "type": "keyword",
+          "value": "113"
+        },
+        {
+          "type": "keyword",
+          "value": "127"
+        },
+        {
+          "type": "keyword",
+          "value": "131"
+        },
+        {
+          "type": "keyword",
+          "value": "137"
+        },
+        {
+          "type": "keyword",
+          "value": "139"
+        },
+        {
+          "type": "keyword",
+          "value": "149"
+        },
+        {
+          "type": "regex",
+          "pattern": "1216"
+        }
+      ],
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn1",
+            "action": "enumerate_primes"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn1",
+            "action": "sum_and_format"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_009",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Given the PascalCase string 'UserProfileService', convert it to snake_case.",
+    "quality_criteria": {
+      "exact_match": true
+    },
+    "constraints": {
+      "max_budget_tao": 0.003,
+      "max_latency_seconds": 5,
+      "allowed_subnets": [
+        "sn13"
+      ]
+    },
+    "available_tools": {
+      "sn13": {
+        "type": "data_processing",
+        "avg_cost": 0.002,
+        "avg_latency": 0.8
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": "user_profile_service",
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn13",
+            "action": "transform_case"
+          }
+        ],
+        "edges": []
+      }
+    },
+    "type": "synthetic"
+  },
+  {
+    "task_id": "synthetic_010",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a function that checks whether a given integer is a palindrome (same forwards and backwards as a digit string).",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 10,
+      "allowed_subnets": [
+        "sn4"
+      ]
+    },
+    "available_tools": {
+      "sn4": {
+        "type": "code_generation",
+        "avg_cost": 0.003,
+        "avg_latency": 1.2
+      }
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_numeric_palindrome():\n    from solution import is_numeric_palindrome\n    assert is_numeric_palindrome(121) is True\n    assert is_numeric_palindrome(-121) is False\n    assert is_numeric_palindrome(10) is False\n    assert is_numeric_palindrome(0) is True",
+      "expected_patterns": [
+        "def is_numeric_palindrome",
+        "str",
+        "=="
+      ],
+      "optimal_workflow": {
+        "nodes": [
+          {
+            "id": "step_1",
+            "subnet": "sn4",
+            "action": "generate_code"
+          },
+          {
+            "id": "step_2",
+            "subnet": "sn4",
+            "action": "test_code"
+          }
+        ],
+        "edges": [
+          {
+            "from": "step_1",
+            "to": "step_2"
+          }
+        ]
+      }
+    },
+    "type": "synthetic"
   }
 ]
