@@ -97,7 +97,7 @@ def set_weights_on_chain(
             uids=np.array(miner_uids, dtype=np.int64),
             weights=np.array(normalised_weights, dtype=np.float32),
             wait_for_finalization=False,
-            wait_for_inclusion=True,
+            wait_for_inclusion=False,
             version_key=spec_version,
         )
 
