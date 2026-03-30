@@ -167,3 +167,5 @@ testing/
 
 #CSWON
 agy local dev docs/
+docs/superpowers/
+.claude/

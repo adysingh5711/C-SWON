@@ -6,6 +6,7 @@ import { Nav } from "@/components/nav";
 import { seoConfig } from "@/lib/seo.config";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { DataSourceProvider } from "@/lib/data-source-context";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -93,8 +94,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Nav />
-        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        <DataSourceProvider>
+          <Nav />
+          <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        </DataSourceProvider>
         <Analytics />
         <SpeedInsights />
       </body>

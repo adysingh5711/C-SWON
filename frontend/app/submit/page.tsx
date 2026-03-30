@@ -9,6 +9,7 @@ import { ScoreBreakdown } from "@/components/score-breakdown";
 import { useStepAnimator } from "@/components/step-animator";
 import { SubnetChip } from "@/components/subnet-chip";
 import { formatTao, formatLatency } from "@/lib/utils";
+import { DataSourceToggle } from "@/components/data-source-toggle";
 
 type Phase = "input" | "competing" | "dag" | "executing" | "results";
 
@@ -91,7 +92,10 @@ export default function SubmitPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-[--color-ink]">Submit a Task</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[--color-ink]">Submit Task</h1>
+          <DataSourceToggle mode="coming-soon" />
+        </div>
         <p className="mt-1 text-sm text-[--color-ink-secondary]">Describe a task and watch C-SWON orchestrate an optimized workflow.</p>
       </div>
 

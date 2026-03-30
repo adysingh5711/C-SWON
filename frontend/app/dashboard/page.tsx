@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { mockMiners, mockValidators, mockTasks, mockNetworkStats, mockAuditFlags } from "@/lib/mock-data";
+import { mockTasks, mockAuditFlags } from "@/lib/mock-data";
 import { scoring, network } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
 import { DataTable } from "@/components/data-table";
@@ -9,17 +9,27 @@ import { LifecycleBadge } from "@/components/lifecycle-badge";
 import { TaskTypeIcon } from "@/components/task-type-icon";
 import { EmissionSankey } from "@/components/emission-sankey";
 import { truncateKey, formatScore, formatPercent } from "@/lib/utils";
+import { useNetworkData } from "@/lib/use-network-data";
+import { useDataSource } from "@/lib/data-source-context";
+import { DataSourceToggle } from "@/components/data-source-toggle";
 import type { MinerProfile } from "@/lib/types";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const execProgress = mockNetworkStats.tasks_this_tempo / network.execSupportMin;
-  const sortedMiners = [...mockMiners].sort((a, b) => b.scores.composite - a.scores.composite);
+  const { source } = useDataSource();
+  const { miners, validators, networkStats, loading, error, retry } = useNetworkData();
+  const isTestnet = source === "testnet";
+  const execProgress = networkStats.tasks_this_tempo / network.execSupportMin;
+  const sortedMiners = [...miners].sort((a, b) => b.scores.composite - a.scores.composite);
 
-  const minerColumns = [
+  const sharedColumns = [
     { key: "uid", label: "UID", render: (m: MinerProfile) => <span className="font-mono text-[--color-ink]">{m.uid}</span>, sortValue: (m: MinerProfile) => m.uid, mono: true },
     { key: "hotkey", label: "Hotkey", render: (m: MinerProfile) => <span className="text-[--color-ink-tertiary]">{truncateKey(m.hotkey)}</span>, mono: true },
-    { key: "composite", label: "Score", render: (m: MinerProfile) => <span className="font-bold text-[--color-ink]">{formatScore(m.scores.composite)}</span>, sortValue: (m: MinerProfile) => m.scores.composite, mono: true, align: "right" as const },
+    { key: "stake", label: "Stake", render: (m: MinerProfile) => <span className="font-mono text-[--color-ink-secondary]">{m.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</span>, sortValue: (m: MinerProfile) => m.stake, mono: true, align: "right" as const },
+    { key: "composite", label: isTestnet ? "Incentive" : "Score", render: (m: MinerProfile) => <span className="font-bold text-[--color-ink]">{formatScore(m.scores.composite)}</span>, sortValue: (m: MinerProfile) => m.scores.composite, mono: true, align: "right" as const },
+  ];
+
+  const mockColumns = [
     { key: "success", label: "Success", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.success)}</span>, sortValue: (m: MinerProfile) => m.scores.success, mono: true, align: "right" as const },
     { key: "cost", label: "Cost", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.cost)}</span>, sortValue: (m: MinerProfile) => m.scores.cost, mono: true, align: "right" as const },
     { key: "latency", label: "Latency", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.latency)}</span>, sortValue: (m: MinerProfile) => m.scores.latency, mono: true, align: "right" as const },
@@ -33,36 +43,95 @@ export default function DashboardPage() {
     { key: "weight", label: "Weight", render: (m: MinerProfile) => <div className="w-24"><WeightBar weight={m.weight} capped={m.weight_capped} /></div>, sortValue: (m: MinerProfile) => m.weight, align: "right" as const },
   ];
 
+  const testnetColumns = [
+    { key: "emission", label: "Emission", render: (m: MinerProfile) => <span className="font-mono text-[--color-teal]">{formatScore(m.weight)}</span>, sortValue: (m: MinerProfile) => m.weight, mono: true, align: "right" as const },
+    { key: "immunity", label: "Immunity", render: (m: MinerProfile) => (
+      <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${m.immunity_active ? "bg-emerald-500/15 text-emerald-400" : "bg-[--color-surface-3] text-[--color-ink-tertiary]"}`}>
+        {m.immunity_active ? `${m.immunity_blocks_remaining} blocks` : "none"}
+      </span>
+    ), mono: true, align: "right" as const },
+  ];
+
+  const minerColumns = [
+    ...sharedColumns,
+    ...(!isTestnet ? mockColumns : testnetColumns),
+  ];
+
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-[--color-ink]">Network Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-[--color-ink]">Network Dashboard</h1>
+        <DataSourceToggle mode="enabled" />
+      </div>
 
+      {error && (
+        <div className="flex items-center justify-between rounded-lg border border-[--color-error]/30 bg-[--color-error]/10 px-4 py-3">
+          <span className="text-sm text-[--color-error]">{error}</span>
+          <button onClick={retry} className="rounded bg-[--color-error]/20 px-3 py-1 text-xs text-[--color-error] hover:bg-[--color-error]/30">Retry</button>
+        </div>
+      )}
+
+      {isTestnet && !loading && (
+        <div className="rounded-lg border border-[--color-teal]/30 bg-[--color-teal]/5 px-4 py-2 text-xs text-[--color-teal]">
+          Showing live data from Bittensor testnet (netuid 26). Score breakdown columns are only available in mock mode.
+        </div>
+      )}
+
+      {loading ? (
+        <div className="space-y-8">
+          {/* Skeleton stat cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-lg border border-[--color-border] bg-[--color-surface-1]" />
+            ))}
+          </div>
+          {/* Skeleton table */}
+          <div className="h-64 animate-pulse rounded-lg border border-[--color-border] bg-[--color-surface-1]" />
+        </div>
+      ) : (
+      <>
       {/* Network Overview */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Current Block" value={mockNetworkStats.current_block} accent />
-        <StatCard label="Current Tempo" value={mockNetworkStats.current_tempo} sublabel={`Block / ${network.tempo}`} />
-        <StatCard label="Tasks This Tempo" value={mockNetworkStats.tasks_this_tempo} />
-        <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]">Exec Support Eligibility</p>
-          <p className="mt-1 font-mono text-sm tabular-nums text-[--color-ink-secondary]">{mockNetworkStats.tasks_this_tempo} / {network.execSupportMin}</p>
-          <div className="mt-2 h-2 rounded-full bg-[--color-surface-3]">
-            <div className={`h-full rounded-full transition-all ${execProgress >= 1 ? "bg-emerald-400" : "bg-[--color-teal]"}`} style={{ width: `${Math.min(execProgress * 100, 100)}%` }} />
-          </div>
-        </div>
+        <StatCard label="Current Block" value={networkStats.current_block} accent />
+        <StatCard label="Current Tempo" value={networkStats.current_tempo} sublabel={`Block / ${network.tempo}`} />
+        {isTestnet ? (
+          <>
+            <StatCard label="Active Miners" value={networkStats.active_miners} />
+            <StatCard label="Active Validators" value={networkStats.active_validators} />
+          </>
+        ) : (
+          <>
+            <StatCard label="Tasks This Tempo" value={networkStats.tasks_this_tempo} />
+            <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]">Exec Support Eligibility</p>
+              <p className="mt-1 font-mono text-sm tabular-nums text-[--color-ink-secondary]">{networkStats.tasks_this_tempo} / {network.execSupportMin}</p>
+              <div className="mt-2 h-2 rounded-full bg-[--color-surface-3]">
+                <div className={`h-full rounded-full transition-all ${execProgress >= 1 ? "bg-emerald-400" : "bg-[--color-teal]"}`} style={{ width: `${Math.min(execProgress * 100, 100)}%` }} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Miner Leaderboard */}
       <section>
         <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Miner Leaderboard</h2>
-        <DataTable
-          columns={minerColumns}
-          data={sortedMiners}
-          keyField="uid"
-          onRowClick={(m) => router.push(`/explorer?uid=${m.uid}`)}
-        />
+        {sortedMiners.length === 0 ? (
+          <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-8 text-center text-sm text-[--color-ink-tertiary]">
+            No miners found{isTestnet ? " on testnet" : ""}. {isTestnet && "The subnet may not have active miners yet."}
+          </div>
+        ) : (
+          <DataTable
+            columns={minerColumns}
+            data={sortedMiners}
+            keyField="uid"
+            onRowClick={(m) => router.push(`/explorer?uid=${m.uid}`)}
+          />
+        )}
       </section>
 
-      {/* Scoring Formula + Benchmark Tasks (two-column) */}
+      {/* Scoring Formula + Benchmark Tasks (two-column) — mock only */}
+      {!isTestnet && (
       <div className="grid gap-8 lg:grid-cols-2">
         <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
           <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Scoring Formula</h2>
@@ -105,8 +174,10 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+      )}
 
-      {/* Weight Distribution */}
+      {/* Weight Distribution — mock only */}
+      {!isTestnet && (
       <section>
         <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Weight Distribution</h2>
         <div className="rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
@@ -128,15 +199,20 @@ export default function DashboardPage() {
           <p className="mt-3 text-[10px] text-[--color-ink-muted]">Red line = 15% cap. Excess redistributed to uncapped miners.</p>
         </div>
       </section>
+      )}
 
-      {/* Emission Flow */}
+      {/* Emission Flow — mock only */}
+      {!isTestnet && (
       <section>
         <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Emission Flow</h2>
         <EmissionSankey />
       </section>
+      )}
 
       {/* Audit Flags + Validator Status (two-column) */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className={`grid gap-8 ${!isTestnet ? "lg:grid-cols-2" : ""}`}>
+        {/* Audit Flags — mock only */}
+        {!isTestnet && (
         <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
           <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Audit Flags</h2>
           <div className="space-y-2">
@@ -156,11 +232,12 @@ export default function DashboardPage() {
             ))}
           </div>
         </section>
+        )}
 
         <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
           <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Validator Status</h2>
           <div className="space-y-3">
-            {mockValidators.map((v) => (
+            {validators.map((v) => (
               <div key={v.uid} className="rounded-lg border border-[--color-border] bg-[--color-surface-0] px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -172,7 +249,7 @@ export default function DashboardPage() {
                 <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
                   <div>
                     <p className="text-[10px] text-[--color-ink-tertiary]">Stake</p>
-                    <p className="font-mono tabular-nums text-[--color-gold]">{v.stake.toLocaleString()}</p>
+                    <p className="font-mono tabular-nums text-[--color-gold]">{v.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-[--color-ink-tertiary]">VTrust</p>
@@ -192,6 +269,8 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+      </>
+      )}
     </div>
   );
 }

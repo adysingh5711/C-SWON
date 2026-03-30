@@ -1,28 +1,69 @@
 "use client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { mockMiners, mockValidators } from "@/lib/mock-data";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import { ScoreGauge } from "@/components/score-gauge";
 import { WeightBar } from "@/components/weight-bar";
 import { truncateKey, formatScore, formatPercent } from "@/lib/utils";
 import { scoring } from "@/lib/constants";
+import { useNetworkData } from "@/lib/use-network-data";
+import { useDataSource } from "@/lib/data-source-context";
+import { DataSourceToggle } from "@/components/data-source-toggle";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 
 function ExplorerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const uidParam = searchParams.get("uid");
+  const { source } = useDataSource();
+  const { miners, validators, loading, error, retry } = useNetworkData();
+  const isTestnet = source === "testnet";
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[--color-ink]">Network Explorer</h1>
+          <DataSourceToggle mode="enabled" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-lg border border-[--color-border] bg-[--color-surface-1]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[--color-ink]">Network Explorer</h1>
+          <DataSourceToggle mode="enabled" />
+        </div>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+          <p className="text-sm text-red-400">{error}</p>
+          <button onClick={retry} className="mt-2 rounded bg-red-500/20 px-3 py-1 text-xs text-red-300 transition-colors hover:bg-red-500/30">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!uidParam) {
     return (
       <div className="space-y-8">
-        <h1 className="text-2xl font-bold text-[--color-ink]">Network Explorer</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[--color-ink]">Network Explorer</h1>
+          <DataSourceToggle mode="enabled" />
+        </div>
 
         <section>
           <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Miners</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {mockMiners.map((m) => (
+            {miners.map((m) => (
               <div
                 key={m.uid}
                 onClick={() => router.push(`/explorer?uid=${m.uid}`)}
@@ -45,7 +86,7 @@ function ExplorerContent() {
         <section>
           <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Validators</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {mockValidators.map((v) => (
+            {validators.map((v) => (
               <div key={v.uid} className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-4">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-sm font-bold text-[--color-ink]">UID {v.uid}</span>
@@ -71,8 +112,8 @@ function ExplorerContent() {
   }
 
   const uid = Number(uidParam);
-  const miner = mockMiners.find((m) => m.uid === uid);
-  const validator = mockValidators.find((v) => v.uid === uid);
+  const miner = miners.find((m) => m.uid === uid);
+  const validator = validators.find((v) => v.uid === uid);
 
   if (!miner && !validator) {
     return <p className="text-[--color-ink-secondary]">Participant UID {uid} not found.</p>;
@@ -113,73 +154,83 @@ function ExplorerContent() {
         </div>
 
         {/* Scoring Profile + Gauges */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-            <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Scoring Profile</h2>
-            <ScoreBreakdown scores={miner.scores} />
-            {warmupScale < 1 && (
-              <div className="mt-4 rounded border border-[--color-gold]/20 bg-[--color-gold]/5 px-3 py-2 text-xs text-[--color-gold]">
-                Warmup: {miner.tasks_seen}/{scoring.warmupThreshold} tasks — scale factor {warmupScale.toFixed(2)}
+        {isTestnet ? (
+          <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6 text-center text-sm text-[--color-ink-tertiary]">
+            Detailed score breakdown available in mock mode
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
+              <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Scoring Profile</h2>
+              <ScoreBreakdown scores={miner.scores} />
+              {warmupScale < 1 && (
+                <div className="mt-4 rounded border border-[--color-gold]/20 bg-[--color-gold]/5 px-3 py-2 text-xs text-[--color-gold]">
+                  Warmup: {miner.tasks_seen}/{scoring.warmupThreshold} tasks — scale factor {warmupScale.toFixed(2)}
+                </div>
+              )}
+              <div className="mt-4">
+                <p className="mb-1 text-[10px] uppercase text-[--color-ink-muted]">Weight</p>
+                <WeightBar weight={miner.weight} capped={miner.weight_capped} />
               </div>
-            )}
-            <div className="mt-4">
-              <p className="mb-1 text-[10px] uppercase text-[--color-ink-muted]">Weight</p>
-              <WeightBar weight={miner.weight} capped={miner.weight_capped} />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
+              <ScoreGauge value={miner.scores.success} dimension="success" size={100} />
+              <ScoreGauge value={miner.scores.cost} dimension="cost" size={100} />
+              <ScoreGauge value={miner.scores.latency} dimension="latency" size={100} />
+              <ScoreGauge value={miner.scores.reliability} dimension="reliability" size={100} />
             </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap items-center justify-center gap-6 rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-            <ScoreGauge value={miner.scores.success} dimension="success" size={100} />
-            <ScoreGauge value={miner.scores.cost} dimension="cost" size={100} />
-            <ScoreGauge value={miner.scores.latency} dimension="latency" size={100} />
-            <ScoreGauge value={miner.scores.reliability} dimension="reliability" size={100} />
-          </div>
-        </div>
+        {/* Score History Chart — hidden in testnet mode (score_history is empty) */}
+        {!isTestnet && miner.score_history.length > 0 && (
+          <section className="rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
+            <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Score History (Last {miner.score_history.length} Tasks)</h2>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={historyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="task" stroke="var(--color-ink-tertiary)" tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }} />
+                  <YAxis domain={[0, 1]} stroke="var(--color-ink-tertiary)" tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }} />
+                  <Tooltip contentStyle={{ backgroundColor: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12, fontFamily: "var(--font-mono)" }} />
+                  <Line type="monotone" dataKey="score" stroke="#00d4aa" strokeWidth={1.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
 
-        {/* Score History Chart */}
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Score History (Last {miner.score_history.length} Tasks)</h2>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={historyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="task" stroke="var(--color-ink-tertiary)" tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }} />
-                <YAxis domain={[0, 1]} stroke="var(--color-ink-tertiary)" tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12, fontFamily: "var(--font-mono)" }} />
-                <Line type="monotone" dataKey="score" stroke="#00d4aa" strokeWidth={1.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        {/* Subnet Profiler */}
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Subnet Profiler</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[--color-border] text-left text-[10px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]">
-                  <th className="pb-2 pr-6">Subnet</th>
-                  <th className="pb-2 pr-6 text-right">Avg Cost</th>
-                  <th className="pb-2 pr-6 text-right">Avg Latency</th>
-                  <th className="pb-2 pr-6 text-right">Reliability</th>
-                  <th className="pb-2 text-right">Observations</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(miner.subnet_stats).map(([subnet, stats]) => (
-                  <tr key={subnet} className="border-b border-[--color-border]/50">
-                    <td className="py-2 pr-6 font-mono text-[--color-teal]">{subnet}</td>
-                    <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-gold]">{stats.avg_cost.toFixed(4)}</td>
-                    <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-ink-secondary]">{stats.avg_latency.toFixed(2)}s</td>
-                    <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-ink]">{formatPercent(stats.reliability)}</td>
-                    <td className="py-2 text-right font-mono tabular-nums text-[--color-ink-tertiary]">{stats.observations}</td>
+        {/* Subnet Profiler — hidden in testnet mode (subnet_stats is empty) */}
+        {!isTestnet && Object.keys(miner.subnet_stats).length > 0 && (
+          <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
+            <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Subnet Profiler</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[--color-border] text-left text-[10px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]">
+                    <th className="pb-2 pr-6">Subnet</th>
+                    <th className="pb-2 pr-6 text-right">Avg Cost</th>
+                    <th className="pb-2 pr-6 text-right">Avg Latency</th>
+                    <th className="pb-2 pr-6 text-right">Reliability</th>
+                    <th className="pb-2 text-right">Observations</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {Object.entries(miner.subnet_stats).map(([subnet, stats]) => (
+                    <tr key={subnet} className="border-b border-[--color-border]/50">
+                      <td className="py-2 pr-6 font-mono text-[--color-teal]">{subnet}</td>
+                      <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-gold]">{stats.avg_cost.toFixed(4)}</td>
+                      <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-ink-secondary]">{stats.avg_latency.toFixed(2)}s</td>
+                      <td className="py-2 pr-6 text-right font-mono tabular-nums text-[--color-ink]">{formatPercent(stats.reliability)}</td>
+                      <td className="py-2 text-right font-mono tabular-nums text-[--color-ink-tertiary]">{stats.observations}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
       </div>
     );
   }
