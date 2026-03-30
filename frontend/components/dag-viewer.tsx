@@ -20,8 +20,8 @@ const subnetColors: Record<string, string> = {
 };
 
 const statusStyles: Record<StepStatus, string> = {
-  pending: "border-[--color-border-emphasis]",
-  running: "border-[--color-teal] ring-1 ring-[--color-teal]/30",
+  pending: "border-border-emphasis",
+  running: "border-teal ring-1 ring-teal/30",
   completed: "border-emerald-500/50",
   failed: "border-red-500/50",
 };
@@ -43,30 +43,30 @@ function DagNode({ data }: NodeProps<Node<DagNodeData>>) {
 
   return (
     <div className={cn(
-      "rounded-lg border bg-[--color-surface-1] p-3 min-w-[160px] transition-all duration-300",
+      "rounded-lg border bg-surface-1 p-3 min-w-[160px] transition-all duration-300",
       statusStyles[data.status ?? "pending"]
     )}>
-      <Handle type="target" position={Position.Top} className="!bg-[--color-ink-muted] !border-none !w-2 !h-2" />
+      <Handle type="target" position={Position.Top} className="!bg-ink-muted !border-none !w-2 !h-2" />
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] text-[--color-ink-tertiary]">{data.label}</span>
+        <span className="font-mono text-[10px] text-ink-tertiary">{data.label}</span>
         <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-medium" style={{ backgroundColor: `${color}20`, color }}>
           {data.subnet}
         </span>
       </div>
-      <p className="mt-1 text-xs font-medium text-[--color-ink]">{data.action}</p>
-      <div className="mt-2 flex items-center gap-3 text-[10px] text-[--color-ink-tertiary]">
+      <p className="mt-1 text-xs font-medium text-ink">{data.action}</p>
+      <div className="mt-2 flex items-center gap-3 text-[10px] text-ink-tertiary">
         <span className="font-mono tabular-nums">{formatTao(data.cost)}</span>
         <span className="font-mono tabular-nums">{formatLatency(data.latency)}</span>
       </div>
       {data.retries && (
-        <div className="mt-1 flex items-center gap-1 text-[10px] text-[--color-ink-muted]">
+        <div className="mt-1 flex items-center gap-1 text-[10px] text-ink-muted">
           <span>retry:{data.retries}</span>
           {data.timeout && <span>timeout:{data.timeout}s</span>}
         </div>
       )}
       {data.status === "running" && (
-        <div className="mt-2 h-0.5 rounded-full bg-[--color-surface-3] overflow-hidden">
-          <div className="h-full w-1/2 rounded-full bg-[--color-teal] animate-pulse" />
+        <div className="mt-2 h-0.5 rounded-full bg-surface-3 overflow-hidden">
+          <div className="h-full w-1/2 rounded-full bg-teal animate-pulse" />
         </div>
       )}
       {data.status === "completed" && (
@@ -81,7 +81,7 @@ function DagNode({ data }: NodeProps<Node<DagNodeData>>) {
           failed
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="!bg-[--color-ink-muted] !border-none !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} className="!bg-ink-muted !border-none !w-2 !h-2" />
     </div>
   );
 }
@@ -135,16 +135,16 @@ export function DagViewer({ plan, stepStatuses = {}, className }: DagViewerProps
       target: edge.to,
       label: edge.data_ref,
       animated: stepStatuses[edge.from] === "running" || stepStatuses[edge.from] === "completed",
-      style: { stroke: "var(--color-ink-muted)", strokeWidth: 1.5 },
-      labelStyle: { fill: "var(--color-ink-tertiary)", fontSize: 9, fontFamily: "var(--font-mono)" },
-      labelBgStyle: { fill: "var(--color-surface-0)", fillOpacity: 0.8 },
+      style: { stroke: "var(--ink-muted)", strokeWidth: 1.5 },
+      labelStyle: { fill: "var(--ink-tertiary)", fontSize: 9, fontFamily: "var(--font-mono)" },
+      labelBgStyle: { fill: "var(--surface-0)", fillOpacity: 0.8 },
     }));
 
     return { nodes: layoutNodes, edges: layoutEdges };
   }, [plan, stepStatuses]);
 
   return (
-    <div className={cn("h-[400px] rounded-lg border border-[--color-border] bg-[--color-surface-0]", className)}>
+    <div className={cn("h-[400px] rounded-lg border border-border bg-surface-0", className)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -154,7 +154,7 @@ export function DagViewer({ plan, stepStatuses = {}, className }: DagViewerProps
         minZoom={0.5}
         maxZoom={1.5}
       >
-        <Background color="var(--color-ink-muted)" gap={24} size={1} style={{ opacity: 0.3 }} />
+        <Background color="var(--ink-muted)" gap={24} size={1} style={{ opacity: 0.3 }} />
       </ReactFlow>
     </div>
   );

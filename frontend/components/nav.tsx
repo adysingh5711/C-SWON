@@ -15,7 +15,7 @@ const links = [
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--canvas)]/70 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--canvas)]/70 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-8">
           <Link href="/" className="font-mono text-sm font-bold tracking-tight text-[var(--teal)] transition-colors hover:text-[var(--teal-dim)]">

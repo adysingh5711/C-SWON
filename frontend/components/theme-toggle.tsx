@@ -13,7 +13,7 @@ export function ThemeToggle() {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] text-[var(--color-ink-secondary)] transition-colors hover:bg-[var(--color-surface-1)] hover:text-[var(--color-ink)]"
+      className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-1)] hover:text-[var(--ink)]"
     >
       <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
       <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

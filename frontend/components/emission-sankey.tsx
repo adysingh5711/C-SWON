@@ -17,12 +17,12 @@ export function EmissionSankey() {
   const sourceY = 20;
 
   return (
-    <div className="rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
-      <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-[--color-ink-tertiary]">Emission Flow</h3>
+    <div className="rounded-lg border border-border bg-surface-0 p-6">
+      <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-ink-tertiary">Emission Flow</h3>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxWidth: 500 }}>
         {/* Source bar */}
-        <rect x={sourceX} y={sourceY} width={barWidth} height={sourceHeight} rx={4} fill="var(--color-surface-2)" />
-        <text x={sourceX + barWidth / 2} y={sourceY - 6} textAnchor="middle" className="fill-[--color-ink-secondary]" style={{ font: "10px var(--font-mono)" }}>
+        <rect x={sourceX} y={sourceY} width={barWidth} height={sourceHeight} rx={4} fill="var(--surface-2)" />
+        <text x={sourceX + barWidth / 2} y={sourceY - 6} textAnchor="middle" className="fill-ink-secondary" style={{ font: "10px var(--font-mono)" }}>
           {"\u0394\u03B1"}
         </text>
 
@@ -61,10 +61,10 @@ export function EmissionSankey() {
                 transition={{ duration: 1, delay: i * 0.2 }}
               />
               <rect x={targetX} y={targetY} width={barWidth} height={targetHeight} rx={4} fill={flow.color} fillOpacity={0.2} />
-              <text x={targetX + barWidth + 8} y={targetY + 14} className="fill-[--color-ink]" style={{ font: "12px var(--font-sans)" }}>
+              <text x={targetX + barWidth + 8} y={targetY + 14} className="fill-ink" style={{ font: "12px var(--font-sans)" }}>
                 {flow.label}
               </text>
-              <text x={targetX + barWidth + 8} y={targetY + 28} className="fill-[--color-ink-tertiary]" style={{ font: "11px var(--font-mono)" }}>
+              <text x={targetX + barWidth + 8} y={targetY + 28} className="fill-ink-tertiary" style={{ font: "11px var(--font-mono)" }}>
                 {flow.percent}%
               </text>
             </g>

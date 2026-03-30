@@ -44,24 +44,24 @@ export function DataTable<T>({ columns, data, onRowClick, keyField }: DataTableP
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[--color-border]">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[--color-border] bg-[--color-surface-1]">
+          <tr className="border-b border-border bg-surface-1">
             {columns.map((col) => (
               <th
                 key={col.key}
                 onClick={() => col.sortValue && handleSort(col.key)}
                 className={cn(
-                  "px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]",
+                  "px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-ink-tertiary",
                   col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left",
-                  col.sortValue && "cursor-pointer hover:text-[--color-ink-secondary]"
+                  col.sortValue && "cursor-pointer hover:text-ink-secondary"
                 )}
               >
                 <span className="inline-flex items-center gap-1">
                   {col.label}
                   {sortKey === col.key && (
-                    <span className="text-[--color-teal]">{sortDir === "asc" ? "\u2191" : "\u2193"}</span>
+                    <span className="text-teal">{sortDir === "asc" ? "\u2191" : "\u2193"}</span>
                   )}
                 </span>
               </th>
@@ -74,8 +74,8 @@ export function DataTable<T>({ columns, data, onRowClick, keyField }: DataTableP
               key={String(row[keyField])}
               onClick={() => onRowClick?.(row)}
               className={cn(
-                "border-b border-[--color-border] bg-[--color-surface-0] transition-colors",
-                onRowClick && "cursor-pointer hover:bg-[--color-surface-1]"
+                "border-b border-border bg-surface-0 transition-colors",
+                onRowClick && "cursor-pointer hover:bg-surface-1"
               )}
             >
               {columns.map((col) => (

@@ -2,9 +2,9 @@ import type { TaskType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const config: Record<TaskType, { label: string; className: string }> = {
-  code: { label: "</>", className: "bg-[--color-teal]/15 text-[--color-teal]" },
+  code: { label: "</>", className: "bg-teal/15 text-teal" },
   rag: { label: "RAG", className: "bg-purple-500/15 text-purple-400" },
-  agent: { label: "AGT", className: "bg-[--color-gold]/15 text-[--color-gold]" },
+  agent: { label: "AGT", className: "bg-gold/15 text-gold" },
   data_transform: { label: "DTX", className: "bg-blue-500/15 text-blue-400" },
 };
 

@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { mockTasks, mockAuditFlags } from "@/lib/mock-data";
 import { scoring, network } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
@@ -12,7 +13,14 @@ import { truncateKey, formatScore, formatPercent } from "@/lib/utils";
 import { useNetworkData } from "@/lib/use-network-data";
 import { useDataSource } from "@/lib/data-source-context";
 import { DataSourceToggle } from "@/components/data-source-toggle";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { MinerProfile } from "@/lib/types";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,30 +31,30 @@ export default function DashboardPage() {
   const sortedMiners = [...miners].sort((a, b) => b.scores.composite - a.scores.composite);
 
   const sharedColumns = [
-    { key: "uid", label: "UID", render: (m: MinerProfile) => <span className="font-mono text-[--color-ink]">{m.uid}</span>, sortValue: (m: MinerProfile) => m.uid, mono: true },
-    { key: "hotkey", label: "Hotkey", render: (m: MinerProfile) => <span className="text-[--color-ink-tertiary]">{truncateKey(m.hotkey)}</span>, mono: true },
-    { key: "stake", label: "Stake", render: (m: MinerProfile) => <span className="font-mono text-[--color-ink-secondary]">{m.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</span>, sortValue: (m: MinerProfile) => m.stake, mono: true, align: "right" as const },
-    { key: "composite", label: isTestnet ? "Incentive" : "Score", render: (m: MinerProfile) => <span className="font-bold text-[--color-ink]">{formatScore(m.scores.composite)}</span>, sortValue: (m: MinerProfile) => m.scores.composite, mono: true, align: "right" as const },
+    { key: "uid", label: "UID", render: (m: MinerProfile) => <span className="font-mono text-ink font-semibold">{m.uid}</span>, sortValue: (m: MinerProfile) => m.uid, mono: true },
+    { key: "hotkey", label: "Hotkey", render: (m: MinerProfile) => <span className="text-ink-tertiary">{truncateKey(m.hotkey)}</span>, mono: true },
+    { key: "stake", label: "Stake", render: (m: MinerProfile) => <span className="font-mono text-ink-secondary">{m.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</span>, sortValue: (m: MinerProfile) => m.stake, mono: true, align: "right" as const },
+    { key: "composite", label: isTestnet ? "Incentive" : "Score", render: (m: MinerProfile) => <span className="font-bold text-ink">{formatScore(m.scores.composite)}</span>, sortValue: (m: MinerProfile) => m.scores.composite, mono: true, align: "right" as const },
   ];
 
   const mockColumns = [
-    { key: "success", label: "Success", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.success)}</span>, sortValue: (m: MinerProfile) => m.scores.success, mono: true, align: "right" as const },
-    { key: "cost", label: "Cost", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.cost)}</span>, sortValue: (m: MinerProfile) => m.scores.cost, mono: true, align: "right" as const },
-    { key: "latency", label: "Latency", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.latency)}</span>, sortValue: (m: MinerProfile) => m.scores.latency, mono: true, align: "right" as const },
-    { key: "reliability", label: "Rel.", render: (m: MinerProfile) => <span className="text-[--color-ink-secondary]">{formatScore(m.scores.reliability)}</span>, sortValue: (m: MinerProfile) => m.scores.reliability, mono: true, align: "right" as const },
+    { key: "success", label: "Success", render: (m: MinerProfile) => <span className="text-ink-secondary">{formatScore(m.scores.success)}</span>, sortValue: (m: MinerProfile) => m.scores.success, mono: true, align: "right" as const },
+    { key: "cost", label: "Cost", render: (m: MinerProfile) => <span className="text-ink-secondary">{formatScore(m.scores.cost)}</span>, sortValue: (m: MinerProfile) => m.scores.cost, mono: true, align: "right" as const },
+    { key: "latency", label: "Latency", render: (m: MinerProfile) => <span className="text-ink-secondary">{formatScore(m.scores.latency)}</span>, sortValue: (m: MinerProfile) => m.scores.latency, mono: true, align: "right" as const },
+    { key: "reliability", label: "Rel.", render: (m: MinerProfile) => <span className="text-ink-secondary">{formatScore(m.scores.reliability)}</span>, sortValue: (m: MinerProfile) => m.scores.reliability, mono: true, align: "right" as const },
     { key: "tasks", label: "Tasks", render: (m: MinerProfile) => (
-      <div className="flex items-center gap-2">
-        <span className="text-[--color-ink-secondary]">{m.tasks_seen}</span>
-        {m.tasks_seen < scoring.warmupThreshold && <span className="rounded bg-[--color-gold]/15 px-1.5 py-0.5 text-[9px] text-[--color-gold]">warmup</span>}
+      <div className="flex items-center gap-2 justify-end">
+        <span className="text-ink-secondary">{m.tasks_seen}</span>
+        {m.tasks_seen < scoring.warmupThreshold && <Badge variant="outline" className="border-gold/30 text-gold bg-gold/5 px-1.5 py-0 text-[10px]">warmup</Badge>}
       </div>
     ), sortValue: (m: MinerProfile) => m.tasks_seen, mono: true, align: "right" as const },
-    { key: "weight", label: "Weight", render: (m: MinerProfile) => <div className="w-24"><WeightBar weight={m.weight} capped={m.weight_capped} /></div>, sortValue: (m: MinerProfile) => m.weight, align: "right" as const },
+    { key: "weight", label: "Weight", render: (m: MinerProfile) => <div className="w-24 ml-auto"><WeightBar weight={m.weight} capped={m.weight_capped} /></div>, sortValue: (m: MinerProfile) => m.weight, align: "right" as const },
   ];
 
   const testnetColumns = [
-    { key: "emission", label: "Emission", render: (m: MinerProfile) => <span className="font-mono text-[--color-teal]">{formatScore(m.weight)}</span>, sortValue: (m: MinerProfile) => m.weight, mono: true, align: "right" as const },
+    { key: "emission", label: "Emission", render: (m: MinerProfile) => <span className="font-mono text-teal font-semibold">{formatScore(m.weight)}</span>, sortValue: (m: MinerProfile) => m.weight, mono: true, align: "right" as const },
     { key: "immunity", label: "Immunity", render: (m: MinerProfile) => (
-      <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${m.immunity_active ? "bg-emerald-500/15 text-emerald-400" : "bg-[--color-surface-3] text-[--color-ink-tertiary]"}`}>
+      <span className={`rounded-md px-2 py-1 text-[10px] font-medium ${m.immunity_active ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-surface-2 text-ink-tertiary"}`}>
         {m.immunity_active ? `${m.immunity_blocks_remaining} blocks` : "none"}
       </span>
     ), mono: true, align: "right" as const },
@@ -58,40 +66,38 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[--color-ink]">Network Dashboard</h1>
+    <div className="space-y-10 pb-12">
+      <div className="flex items-center justify-between mt-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Network Dashboard</h1>
         <DataSourceToggle mode="enabled" />
       </div>
 
       {error && (
-        <div className="flex items-center justify-between rounded-lg border border-[--color-error]/30 bg-[--color-error]/10 px-4 py-3">
-          <span className="text-sm text-[--color-error]">{error}</span>
-          <button onClick={retry} className="rounded bg-[--color-error]/20 px-3 py-1 text-xs text-[--color-error] hover:bg-[--color-error]/30">Retry</button>
-        </div>
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex items-center justify-between rounded-xl border border-error/30 bg-error/10 px-5 py-4 backdrop-blur-sm">
+          <span className="text-sm font-medium text-error">{error}</span>
+          <Button variant="outline" size="sm" onClick={retry} className="border-error/20 text-error hover:bg-error/20">Retry</Button>
+        </motion.div>
       )}
 
       {isTestnet && !loading && (
-        <div className="rounded-lg border border-[--color-teal]/30 bg-[--color-teal]/5 px-4 py-2 text-xs text-[--color-teal]">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="rounded-xl border border-teal/30 bg-teal/5 px-5 py-3 text-sm font-medium text-teal backdrop-blur-sm">
           Showing live data from Bittensor testnet (netuid 26). Score breakdown columns are only available in mock mode.
-        </div>
+        </motion.div>
       )}
 
       {loading ? (
-        <div className="space-y-8">
-          {/* Skeleton stat cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-10">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-lg border border-[--color-border] bg-[--color-surface-1]" />
+              <div key={i} className="h-28 animate-pulse rounded-2xl border border-border bg-surface-1" />
             ))}
           </div>
-          {/* Skeleton table */}
-          <div className="h-64 animate-pulse rounded-lg border border-[--color-border] bg-[--color-surface-1]" />
+          <div className="h-80 animate-pulse rounded-2xl border border-border bg-surface-1" />
         </div>
       ) : (
       <>
       {/* Network Overview */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Current Block" value={networkStats.current_block} accent />
         <StatCard label="Current Tempo" value={networkStats.current_tempo} sublabel={`Block / ${network.tempo}`} />
         {isTestnet ? (
@@ -102,173 +108,183 @@ export default function DashboardPage() {
         ) : (
           <>
             <StatCard label="Tasks This Tempo" value={networkStats.tasks_this_tempo} />
-            <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-4">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-[--color-ink-tertiary]">Exec Support Eligibility</p>
-              <p className="mt-1 font-mono text-sm tabular-nums text-[--color-ink-secondary]">{networkStats.tasks_this_tempo} / {network.execSupportMin}</p>
-              <div className="mt-2 h-2 rounded-full bg-[--color-surface-3]">
-                <div className={`h-full rounded-full transition-all ${execProgress >= 1 ? "bg-emerald-400" : "bg-[--color-teal]"}`} style={{ width: `${Math.min(execProgress * 100, 100)}%` }} />
+            <div className="rounded-2xl border border-border bg-surface-0/60 p-5 shadow-sm backdrop-blur-md transition-colors hover:bg-surface-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-ink-tertiary">Exec Support Eligibility</p>
+              <p className="mt-2 font-mono text-base font-bold text-ink-secondary tabular-nums">{networkStats.tasks_this_tempo} / {network.execSupportMin}</p>
+              <div className="mt-3 h-2.5 rounded-full bg-surface-2 overflow-hidden shadow-inner">
+                <div className={`h-full rounded-full transition-all duration-500 ${execProgress >= 1 ? "bg-success" : "bg-teal"}`} style={{ width: `${Math.min(execProgress * 100, 100)}%` }} />
               </div>
             </div>
           </>
         )}
-      </div>
+      </motion.div>
 
       {/* Miner Leaderboard */}
-      <section>
-        <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Miner Leaderboard</h2>
+      <motion.section initial="hidden" animate="visible" variants={fadeInUp}>
+        <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-teal">Miner Leaderboard</h2>
         {sortedMiners.length === 0 ? (
-          <div className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-8 text-center text-sm text-[--color-ink-tertiary]">
+          <div className="rounded-2xl border border-border bg-surface-0/50 p-10 text-center text-sm font-medium text-ink-tertiary backdrop-blur-md">
             No miners found{isTestnet ? " on testnet" : ""}. {isTestnet && "The subnet may not have active miners yet."}
           </div>
         ) : (
-          <DataTable
-            columns={minerColumns}
-            data={sortedMiners}
-            keyField="uid"
-            onRowClick={(m) => router.push(`/explorer?uid=${m.uid}`)}
-          />
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface-0/80 shadow-sm backdrop-blur-md">
+            <DataTable
+              columns={minerColumns}
+              data={sortedMiners}
+              keyField="uid"
+              onRowClick={(m) => router.push(`/explorer?uid=${m.uid}`)}
+            />
+          </div>
         )}
-      </section>
+      </motion.section>
 
-      {/* Scoring Formula + Benchmark Tasks (two-column) — mock only */}
+      {/* Scoring Formula + Benchmark Tasks */}
       {!isTestnet && (
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Scoring Formula</h2>
-          <p className="mb-4 font-mono text-xs text-[--color-ink-secondary]">
-            S = {Object.entries(scoring.weights).map(([k, v]) => `${v.toFixed(2)}x${k}`).join(" + ")}
-          </p>
-          <div className="space-y-2">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="grid gap-8 lg:grid-cols-2">
+        <section className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md transition-all hover:bg-surface-0">
+          <h2 className="mb-6 text-sm font-semibold uppercase tracking-widest text-teal">Scoring Formula</h2>
+          <div className="mb-6 rounded-xl border border-border bg-surface-1 p-4 shadow-inner">
+            <p className="font-mono text-sm text-ink-secondary text-center font-medium">
+              S = {Object.entries(scoring.weights).map(([k, v]) => `${v.toFixed(2)}x${k}`).join(" + ")}
+            </p>
+          </div>
+          <div className="space-y-4">
             {Object.entries(scoring.weights).map(([key, weight]) => (
-              <div key={key} className="flex items-center gap-3">
-                <span className="w-20 text-xs text-[--color-ink-secondary] capitalize">{key}</span>
-                <div className="flex-1 h-2 rounded-full bg-[--color-surface-3]">
-                  <div className="h-full rounded-full bg-[--color-teal]" style={{ width: `${weight * 100}%` }} />
+              <div key={key} className="flex items-center gap-4">
+                <span className="w-24 text-sm font-semibold text-ink-secondary capitalize">{key}</span>
+                <div className="flex-1 h-2 rounded-full bg-surface-2 overflow-hidden shadow-inner">
+                  <div className="h-full rounded-full bg-teal" style={{ width: `${weight * 100}%` }} />
                 </div>
-                <span className="font-mono text-xs tabular-nums text-[--color-ink-tertiary]">{(weight * 100).toFixed(0)}%</span>
+                <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-ink-tertiary">{(weight * 100).toFixed(0)}%</span>
               </div>
             ))}
           </div>
-          <div className="mt-4 rounded border border-[--color-gold]/20 bg-[--color-gold]/5 px-3 py-2 text-xs text-[--color-gold]">
+          <div className="mt-6 rounded-lg border border-gold/30 bg-gold/10 px-4 py-3 text-xs font-medium text-gold">
             Success gate: {scoring.successGate} — cost &amp; latency only scored above this threshold
           </div>
         </section>
 
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Benchmark Tasks</h2>
-          <div className="space-y-3">
+        <section className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md hover:bg-surface-0 transition-all">
+          <h2 className="mb-6 text-sm font-semibold uppercase tracking-widest text-teal">Benchmark Tasks</h2>
+          <div className="space-y-4">
             {mockTasks.map((task) => (
               <div
                 key={task.task_id}
                 onClick={() => router.push(`/task/${task.task_id}`)}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-[--color-border] bg-[--color-surface-0] px-4 py-3 transition-colors hover:bg-[--color-surface-2]"
+                className="group flex cursor-pointer items-center gap-4 rounded-xl border border-border bg-surface-1 px-5 py-4 transition-all hover:border-teal/30 hover:bg-surface-1/50 hover:shadow-md hover:-translate-y-0.5"
               >
-                <TaskTypeIcon type={task.task_type} />
+                <div className="rounded-full bg-surface-0 p-2 shadow-sm text-teal group-hover:bg-teal/10">
+                  <TaskTypeIcon type={task.task_type} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-xs text-[--color-ink-secondary]">{task.task_id}</p>
-                  <p className="truncate text-sm text-[--color-ink]">{task.description}</p>
+                  <p className="font-mono text-xs font-semibold text-ink-secondary group-hover:text-teal transition-colors">{task.task_id}</p>
+                  <p className="truncate text-sm font-medium text-ink mt-0.5">{task.description}</p>
                 </div>
                 <LifecycleBadge status={task.status} />
               </div>
             ))}
           </div>
         </section>
-      </div>
+      </motion.div>
       )}
 
-      {/* Weight Distribution — mock only */}
+      {/* Weight Distribution */}
       {!isTestnet && (
-      <section>
-        <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Weight Distribution</h2>
-        <div className="rounded-lg border border-[--color-border] bg-[--color-surface-0] p-6">
-          <div className="space-y-2">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-teal">Weight Distribution</h2>
+        <div className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md">
+          <div className="space-y-4">
             {sortedMiners.map((m) => (
-              <div key={m.uid} className="flex items-center gap-3">
-                <span className="w-16 font-mono text-xs text-[--color-ink-secondary]">UID {m.uid}</span>
-                <div className="flex-1 h-4 rounded bg-[--color-surface-2] relative">
+              <div key={m.uid} className="flex items-center gap-4">
+                <span className="w-16 font-mono text-sm font-semibold text-ink-secondary">UID {m.uid}</span>
+                <div className="flex-1 h-5 rounded-md bg-surface-2 relative shadow-inner overflow-hidden">
                   <div
-                    className={`h-full rounded transition-all ${m.weight_capped ? "bg-[--color-gold]" : "bg-[--color-teal]"}`}
+                    className={`h-full transition-all ${m.weight_capped ? "bg-gold" : "bg-teal"}`}
                     style={{ width: `${(m.weight / 0.20) * 100}%` }}
                   />
-                  <div className="absolute top-0 h-full w-px bg-red-400/60" style={{ left: `${(0.15 / 0.20) * 100}%` }} />
+                  <div className="absolute top-0 h-full w-0.5 bg-error opacity-70" style={{ left: `${(0.15 / 0.20) * 100}%` }} />
                 </div>
-                <span className="w-14 text-right font-mono text-xs tabular-nums text-[--color-ink-tertiary]">{formatPercent(m.weight)}</span>
+                <span className="w-16 text-right font-mono text-sm font-bold tabular-nums text-ink-tertiary">{formatPercent(m.weight)}</span>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[10px] text-[--color-ink-muted]">Red line = 15% cap. Excess redistributed to uncapped miners.</p>
+          <p className="mt-5 text-xs font-medium text-ink-muted flex items-center gap-2">
+            <span className="inline-block w-3 h-3 bg-error rounded-full opacity-70"></span>
+            Red line = 15% cap. Excess redistributed to uncapped miners.
+          </p>
         </div>
-      </section>
+      </motion.section>
       )}
 
-      {/* Emission Flow — mock only */}
+      {/* Emission Flow */}
       {!isTestnet && (
-      <section>
-        <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Emission Flow</h2>
-        <EmissionSankey />
-      </section>
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+        <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-teal">Emission Flow</h2>
+        <div className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md">
+           <EmissionSankey />
+        </div>
+      </motion.section>
       )}
 
-      {/* Audit Flags + Validator Status (two-column) */}
-      <div className={`grid gap-8 ${!isTestnet ? "lg:grid-cols-2" : ""}`}>
-        {/* Audit Flags — mock only */}
+      {/* Audit Flags + Validator Status */}
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className={`grid gap-8 ${!isTestnet ? "lg:grid-cols-2" : ""}`}>
         {!isTestnet && (
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Audit Flags</h2>
-          <div className="space-y-2">
+        <section className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md">
+          <h2 className="mb-6 text-sm font-semibold uppercase tracking-widest text-teal">Audit Flags</h2>
+          <div className="space-y-4">
             {mockAuditFlags.map((flag, i) => (
-              <div key={i} className="rounded border border-[--color-gold]/20 bg-[--color-gold]/5 px-3 py-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-[--color-ink]">UID {flag.uid}</span>
-                  <span className="font-mono text-[10px] text-[--color-ink-tertiary]">Block {flag.block.toLocaleString()}</span>
+              <div key={i} className="rounded-xl border border-gold/30 bg-gold/5 px-5 py-4 transition-all hover:bg-gold/10 hover:shadow-sm">
+                <div className="flex items-center justify-between border-b border-gold/20 pb-2 mb-2">
+                  <span className="font-mono text-sm font-bold text-ink">UID {flag.uid}</span>
+                  <span className="font-mono text-xs font-medium text-ink-tertiary">Block {flag.block.toLocaleString()}</span>
                 </div>
-                <div className="mt-1 flex items-center gap-4 font-mono text-xs">
-                  <span className="text-[--color-ink-secondary]">Score: {formatScore(flag.score)}</span>
-                  <span className="text-[--color-ink-tertiary]">Avg: {formatScore(flag.previous_avg)}</span>
-                  <span className="text-[--color-gold]">+{flag.jump_percent.toFixed(1)}%</span>
+                <div className="flex items-center gap-4 font-mono text-xs font-medium mb-2">
+                  <span className="text-ink-secondary">Score: {formatScore(flag.score)}</span>
+                  <span className="text-ink-tertiary">Avg: {formatScore(flag.previous_avg)}</span>
+                  <Badge variant="outline" className="border-gold text-gold bg-gold/10 px-1 py-0 shadow-none">+{flag.jump_percent.toFixed(1)}%</Badge>
                 </div>
-                <p className="mt-1 text-[10px] text-[--color-ink-tertiary]">{flag.message}</p>
+                <p className="text-xs font-medium text-ink-tertiary">{flag.message}</p>
               </div>
             ))}
           </div>
         </section>
         )}
 
-        <section className="rounded-lg border border-[--color-border] bg-[--color-surface-1] p-6">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-[--color-ink-tertiary]">Validator Status</h2>
-          <div className="space-y-3">
+        <section className="rounded-2xl border border-border bg-surface-0/50 p-8 shadow-sm backdrop-blur-md">
+          <h2 className="mb-6 text-sm font-semibold uppercase tracking-widest text-teal">Validator Status</h2>
+          <div className="space-y-4">
             {validators.map((v) => (
-              <div key={v.uid} className="rounded-lg border border-[--color-border] bg-[--color-surface-0] px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-[--color-ink]">UID {v.uid}</span>
-                    <span className="font-mono text-[10px] text-[--color-ink-tertiary]">{truncateKey(v.hotkey)}</span>
+              <div key={v.uid} className="rounded-xl border border-border bg-surface-1 px-5 py-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-base font-bold text-ink">UID {v.uid}</span>
+                    <span className="font-mono text-xs text-ink-tertiary">{truncateKey(v.hotkey)}</span>
                   </div>
-                  <span className="rounded bg-purple-500/15 px-1.5 py-0.5 text-[9px] font-medium text-purple-400">validator</span>
+                  <Badge variant="secondary" className="bg-purple/15 text-purple hover:bg-purple/25 shadow-none border-none">validator</Badge>
                 </div>
-                <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
+                <div className="grid grid-cols-4 gap-4 text-xs">
                   <div>
-                    <p className="text-[10px] text-[--color-ink-tertiary]">Stake</p>
-                    <p className="font-mono tabular-nums text-[--color-gold]">{v.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</p>
+                    <p className="text-[10px] uppercase font-medium text-ink-muted">Stake</p>
+                    <p className="font-mono text-sm font-bold tabular-nums text-gold mt-1">{v.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-[--color-ink-tertiary]">VTrust</p>
-                    <p className="font-mono tabular-nums text-[--color-ink]">{formatScore(v.vtrust)}</p>
+                    <p className="text-[10px] uppercase font-medium text-ink-muted">VTrust</p>
+                    <p className="font-mono text-sm font-bold tabular-nums text-ink mt-1">{formatScore(v.vtrust)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-[--color-ink-tertiary]">Scoring</p>
-                    <p className="font-mono text-[--color-ink-secondary]">{v.scoring_version}</p>
+                    <p className="text-[10px] uppercase font-medium text-ink-muted">Scoring</p>
+                    <p className="font-mono text-sm font-bold text-ink-secondary mt-1">{v.scoring_version}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-[--color-ink-tertiary]">Benchmark</p>
-                    <p className="font-mono text-[--color-ink-secondary]">{v.benchmark_version}</p>
+                    <p className="text-[10px] uppercase font-medium text-ink-muted">Benchmark</p>
+                    <p className="font-mono text-sm font-bold text-ink-secondary mt-1">{v.benchmark_version}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </section>
-      </div>
+      </motion.div>
       </>
       )}
     </div>

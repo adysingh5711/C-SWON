@@ -20,7 +20,7 @@ export function ScoreGauge({ value, dimension, size = 80 }: { value: number; dim
       <svg width={size} height={size / 2 + 8} viewBox={`0 0 ${size} ${size / 2 + 8}`}>
         <path
           d={`M 4 ${center} A ${radius} ${radius} 0 0 1 ${size - 4} ${center}`}
-          fill="none" stroke="var(--color-surface-3)" strokeWidth={4} strokeLinecap="round"
+          fill="none" stroke="var(--surface-3)" strokeWidth={4} strokeLinecap="round"
         />
         <path
           d={`M 4 ${center} A ${radius} ${radius} 0 0 1 ${size - 4} ${center}`}
@@ -29,8 +29,8 @@ export function ScoreGauge({ value, dimension, size = 80 }: { value: number; dim
           className="transition-all duration-700"
         />
       </svg>
-      <span className="font-mono text-sm font-bold tabular-nums text-[--color-ink]">{formatScore(value)}</span>
-      <span className="text-[10px] uppercase tracking-wider text-[--color-ink-tertiary]">{dimension}</span>
+      <span className="font-mono text-sm font-bold tabular-nums text-ink">{formatScore(value)}</span>
+      <span className="text-[10px] uppercase tracking-wider text-ink-tertiary">{dimension}</span>
     </div>
   );
 }

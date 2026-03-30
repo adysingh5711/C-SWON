@@ -7,8 +7,8 @@ export function SubnetChip({ subnet, selected, onClick }: { subnet: string; sele
       className={cn(
         "rounded-full border px-3 py-1 font-mono text-xs transition-colors",
         selected
-          ? "border-[--color-teal]/40 bg-[--color-teal]/15 text-[--color-teal]"
-          : "border-[--color-border] bg-[--color-surface-1] text-[--color-ink-secondary] hover:border-[--color-border-emphasis]"
+          ? "border-teal/40 bg-teal/15 text-teal"
+          : "border-border bg-surface-1 text-ink-secondary hover:border-border-emphasis"
       )}
     >
       {subnet}

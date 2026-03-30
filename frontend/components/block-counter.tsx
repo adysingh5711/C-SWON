@@ -12,9 +12,9 @@ export function BlockCounter() {
 
   return (
     <div className="flex items-center gap-2 font-mono text-xs">
-      <span className="h-1.5 w-1.5 rounded-full bg-[--color-teal] animate-pulse" />
-      <span className="text-[--color-ink-tertiary]">Block</span>
-      <span className="text-[--color-ink-secondary] tabular-nums">{block.toLocaleString()}</span>
+      <span className="h-1.5 w-1.5 rounded-full bg-teal animate-pulse" />
+      <span className="text-ink-tertiary">Block</span>
+      <span className="text-ink-secondary tabular-nums">{block.toLocaleString()}</span>
     </div>
   );
 }
