@@ -343,8 +343,8 @@ class Miner(BaseMinerNeuron):
         else:
             caller_uid = self.metagraph.hotkeys.index(caller_hotkey)
 
-        # Optionally enforce validator permit
-        if self.config.blacklist.force_validator_permit:
+        # Optionally enforce validator permit (skip on testnet — low stake means no permits)
+        if self.config.blacklist.force_validator_permit and self.config.subtensor.network != "test":
             if caller_uid is None:
                 bt.logging.warning(
                     f"Blacklisting unregistered hotkey {caller_hotkey} "
