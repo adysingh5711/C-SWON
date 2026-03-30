@@ -18,6 +18,7 @@ Six-stage pipeline:
 6. Rolling window update + temporal consistency + lifecycle tracking + N_min logging
 """
 
+import asyncio
 import threading
 import time
 from collections import defaultdict, deque
@@ -381,14 +382,23 @@ async def forward(self):
     scores = []
     for response, uid in zip(valid_responses, valid_uids):
         # Stage 3: Sandboxed async execution (issue 2.8) with routing_policy (issue 1.3)
-        exec_result = await execute_workflow_async(
-            workflow_plan=response.workflow_plan or {},
-            constraints=constraints,
-            total_estimated_cost=response.total_estimated_cost or 0.01,
-            routing_policy=routing_policy,
-            dendrite=self.dendrite,
-            metagraph=self.metagraph,
-        )
+        try:
+            exec_result = await asyncio.wait_for(
+                execute_workflow_async(
+                    workflow_plan=response.workflow_plan or {},
+                    constraints=constraints,
+                    total_estimated_cost=response.total_estimated_cost or 0.01,
+                    routing_policy=routing_policy,
+                    dendrite=self.dendrite,
+                    metagraph=self.metagraph,
+                ),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            bt.logging.warning(
+                f"execute_workflow_async timed out for miner {uid}"
+            )
+            continue
 
         completion_ratio = (
             exec_result.steps_completed / exec_result.total_steps
