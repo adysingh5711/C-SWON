@@ -1,0 +1,820 @@
+/**
+ * C-SWON Documentation
+ * Styling matched to docs.learnbittensor.org (Bittensor developer-docs)
+ * Fonts: Haffer, HafferSQ, DM Mono, FiraCode, TTCommonsPro
+ */
+
+/* ── Font Faces ─────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Haffer";
+  src: url(/fonts/Haffer-Light.ttf);
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Haffer";
+  src: url(/fonts/Haffer-Medium.ttf);
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Haffer";
+  src: url(/fonts/Haffer-Regular.ttf);
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Haffer";
+  src: url(/fonts/Haffer-SemiBold.ttf);
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HafferSQ";
+  src: url(/fonts/HafferSQ-Light.ttf);
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HafferSQ";
+  src: url(/fonts/HafferSQ-Medium.ttf);
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HafferSQ";
+  src: url(/fonts/HafferSQ-Regular.ttf);
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HafferSQ";
+  src: url(/fonts/HafferSQ-SemiBold.ttf);
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "TTCommonsPro";
+  src: url(/fonts/TTCommonsProMonoMedium.ttf);
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "TTCommonsPro";
+  src: url(/fonts/TTCommonsProMonoRegular.ttf);
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: "FiraCode";
+  src: url(/fonts/FiraCode_VariableFont_wght.ttf);
+}
+@font-face {
+  font-family: "DM Mono";
+  src: url(/fonts/DMMono-Regular.ttf);
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "DM Mono";
+  src: url(/fonts/DMMono-Medium.ttf);
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* ── Root Variables ─────────────────────────────────────────── */
+
+:root {
+  --ifm-color-primary: rgba(14, 16, 19, 1);
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: black;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --ifm-h1-font-size: 1.8rem;
+  --ifm-h2-font-size: 1.5rem;
+  --ifm-h3-font-size: 1.2rem;
+  --ifm-h4-font-size: 1rem;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --text-primary: #5f6368;
+  --text-secondary: #5f6368;
+  --grey-100: #f8f9fa;
+  --grey-900: #0e1013;
+  --ifm-menu-color-background-hover: var(--grey-100);
+}
+
+/* ── Light Mode ─────────────────────────────────────────────── */
+
+[data-theme="light"] {
+  --ifm-color-primary: black;
+  --ifm-color-primary-light: black;
+  --ifm-navbar-active-color: black;
+  --ifm-navbar-item-color: rgb(111, 112, 114);
+  --ifm-footer-bg: #0e1013;
+  --ifm-footer-company-name-color: white;
+  --ifm-algolia-bg: white;
+  --ifm-navbar-border: #dbdde1;
+  --ifm-table-of-contents-border: rgba(219, 221, 225, 1);
+  --ifm-table-of-contents-border-active: black;
+  --ifm-table-of-contents-text: #5f6368;
+  --ifm-table-of-contents-text-active: #0e1013;
+  --ifm-blockquote-border: #dbdde1;
+  --ifm-alert-secondary: #f8f9fa;
+  --ifm-alert-success: #e6f5e6;
+  --ifm-alert-info: #eef9fc;
+  --ifm-alert-warning: #fff8e6;
+  --ifm-alert-danger: #ffebec;
+  --ifm-table-header-bg: #f8f9fa;
+  --ifm-table-header-color: #5f6368;
+  --ifm-table-body-color: rgba(95, 99, 104, 1);
+  --ifm-table-tr-border: rgba(14, 16, 19, 1);
+  --ifm-ul: rgba(95, 99, 104, 1);
+  --ifm-hr: rgba(14, 16, 19, 1);
+}
+
+/* ── Dark Mode ──────────────────────────────────────────────── */
+
+[data-theme="dark"] {
+  --ifm-color-primary: white;
+  --ifm-color-primary-dark: white;
+  --ifm-background-surface-color: #000000 !important;
+  --ifm-background-color: #000000 !important;
+  --ifm-navbar-active-color: white;
+  --ifm-navbar-item-color: #a5abaf;
+  --ifm-footer-bg: #0e1013;
+  --ifm-footer-company-name-color: white;
+  --ifm-dropdown-background-color: #242526 !important;
+  --ifm-navbar-border: #282a2d;
+  --ifm-table-of-contents-border: rgba(40, 42, 45, 1);
+  --ifm-table-of-contents-border-active: rgba(248, 249, 250, 1);
+  --ifm-table-of-contents-text: #a5abaf;
+  --ifm-table-of-contents-text-active: white;
+  --ifm-blockquote-border: #606770;
+  --ifm-alert-secondary: rgba(235, 237, 240, 0.15);
+  --ifm-alert-success: rgba(0, 164, 0, 0.15);
+  --ifm-alert-info: rgba(84, 199, 236, 0.15);
+  --ifm-alert-warning: rgba(255, 186, 0, 0.15);
+  --ifm-alert-danger: rgba(250, 56, 62, 0.15);
+  --ifm-table-header-bg: #2b2b2d;
+  --ifm-table-header-color: white;
+  --ifm-table-body-color: #d7e3e3;
+  --ifm-table-tr-border: #3c3e42;
+  --ifm-ul: #f5f6f7;
+  --ifm-hr: rgba(95, 99, 104, 1);
+  --text-primary: #e3e3e3;
+  --text-secondary: #a5abaf;
+  --ifm-font-color-base: #e3e3e3;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+
+body {
+  font-family: "Haffer", system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  font-weight: 200;
+  line-height: 160%;
+}
+
+h1 {
+  font-family: "Haffer" !important;
+  font-weight: 400 !important;
+  font-size: 32px !important;
+  padding-bottom: 22px !important;
+  line-height: 120% !important;
+}
+
+h2 {
+  font-family: "Haffer" !important;
+  font-weight: 400 !important;
+  font-size: 24px !important;
+  line-height: 120% !important;
+}
+
+h3 {
+  font-family: "Haffer" !important;
+  font-weight: 400 !important;
+  font-size: 20px !important;
+  line-height: 120% !important;
+}
+
+h4 {
+  font-family: "Haffer" !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  line-height: 140% !important;
+}
+
+p {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+}
+
+a {
+  font-weight: 400;
+}
+
+ul {
+  font-family: "Haffer";
+  font-weight: 200;
+  text-transform: none;
+}
+
+/* Scroll margin for anchor links */
+h1, h2, h3, h4, h5, h6 {
+  scroll-margin-top: 100px;
+}
+
+/* ── Navbar ─────────────────────────────────────────────────── */
+
+.navbar {
+  margin-bottom: 10px;
+}
+
+.navbar__title.text--truncate {
+  font-size: 16px !important;
+  line-height: 27.2px !important;
+  font-weight: 400 !important;
+  font-family: "Haffer";
+  letter-spacing: 0.32px;
+}
+
+.navbar__link {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "DM Mono", monospace;
+  color: var(--text-secondary);
+  letter-spacing: 0.6px;
+}
+
+.navbar__item.navbar__link {
+  font-family: "DM Mono", monospace;
+  color: var(--text-secondary);
+  font-size: 12px !important;
+  letter-spacing: 0.6px;
+  margin-left: 32px;
+}
+
+[data-theme="dark"] .navbar__link:hover {
+  color: #e3e3e3 !important;
+}
+
+.navbar__link:hover {
+  color: #000 !important;
+}
+
+.navbar__inner {
+  align-content: center;
+}
+
+.navbar__items--right {
+  gap: 0 32px !important;
+  height: 48px;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+
+.menu__list {
+  list-style: none;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  line-height: 150%;
+  text-transform: uppercase;
+}
+
+.theme-doc-sidebar-container nav {
+  padding: 16px !important;
+  margin-top: 80px;
+}
+
+.menu__link {
+  padding: 15px;
+  font-size: 12px !important;
+  border-radius: 0 !important;
+  color: var(--ifm-navbar-item-color);
+  font-family: "DM Mono", monospace;
+  letter-spacing: 0.6px !important;
+}
+
+.menu__link--active {
+  background-color: transparent !important;
+  color: var(--ifm-navbar-active-color) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .menu__link:hover {
+  color: #e3e3e3 !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .menu__list-item-collapsible:hover,
+[data-theme="dark"] .menu__list-item-collapsible:hover > .menu__link,
+[data-theme="dark"] .menu__list-item-collapsible > .menu__link:hover {
+  background-color: transparent !important;
+  color: #e3e3e3 !important;
+}
+
+[data-theme="dark"] .menu__link--sublist:hover,
+[data-theme="dark"] .menu__caret:hover {
+  background-color: transparent !important;
+}
+
+/* Sidebar dashed dividers */
+.theme-doc-sidebar-menu.menu__list > li {
+  position: relative;
+}
+
+.theme-doc-sidebar-menu.menu__list > li::after {
+  content: "";
+  background-position: 0 0;
+  background-image: linear-gradient(
+    to right,
+    var(--grey-900),
+    1.5px,
+    transparent 1.5px
+  );
+  background-repeat: repeat-x;
+  background-size: 6px;
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+[data-theme="dark"] .theme-doc-sidebar-menu.menu__list > li::after {
+  background-image: linear-gradient(
+    to right,
+    #5f6368,
+    1.5px,
+    transparent 1.5px
+  );
+}
+
+.menu__list-item-collapsible {
+  position: relative;
+}
+
+.menu__list-item-collapsible::after {
+  content: "";
+  background-position: 0 0;
+  background-image: linear-gradient(
+    to right,
+    var(--grey-900),
+    1.5px,
+    transparent 1.5px
+  );
+  background-repeat: repeat-x;
+  background-size: 6px;
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+[data-theme="dark"] .menu__list-item-collapsible::after {
+  background-image: linear-gradient(
+    to right,
+    #5f6368,
+    1.5px,
+    transparent 1.5px
+  );
+}
+
+.theme-doc-sidebar-menu.menu__list li {
+  margin: 0 !important;
+}
+
+.theme-doc-sidebar-menu.menu__list li > a {
+  height: 48px;
+}
+
+.menu__link.menu__link--sublist.menu__link--sublist-caret {
+  height: 48px;
+}
+
+/* Nested sidebar items */
+li.theme-doc-sidebar-item-category.theme-doc-sidebar-item-category-level-2 > div a.menu__link {
+  padding-left: 3rem !important;
+}
+
+li.theme-doc-sidebar-item-link-level-3 a {
+  padding-left: 4.5rem !important;
+}
+
+/* ── Table of Contents ──────────────────────────────────────── */
+
+.table-of-contents,
+.table-of-contents ul {
+  font-family: "DM Mono", monospace;
+}
+
+.table-of-contents__link {
+  color: #5f6368;
+  font-family: "DM Mono", monospace;
+  font-size: 0.75rem;
+  line-height: 130%;
+  letter-spacing: 0.6px;
+}
+
+.table-of-contents__link--active {
+  font-weight: bold;
+  color: var(--ifm-table-of-contents-text-active) !important;
+}
+
+.table-of-contents.table-of-contents__left-border {
+  border: none !important;
+}
+
+.table-of-contents__link:hover {
+  color: var(--ifm-table-of-contents-text-active) !important;
+}
+
+[class*="tableOfContents"] {
+  padding-top: 20px;
+}
+
+/* ── Breadcrumbs ────────────────────────────────────────────── */
+
+.breadcrumbs__item .breadcrumbs__link {
+  color: var(--text-secondary);
+  line-height: 130%;
+  letter-spacing: 0.6px;
+  font-family: "DM Mono", monospace;
+  font-size: 0.75rem;
+}
+
+.breadcrumbs__item.breadcrumbs__item--active .breadcrumbs__link {
+  background: initial !important;
+  color: var(--text-primary);
+  font-family: "DM Mono", monospace;
+  font-weight: bold;
+}
+
+/* ── Content Layout ─────────────────────────────────────────── */
+
+.container.padding-top--md > div > div:first-child {
+  padding: 32px 32px 48px 56px !important;
+}
+
+@media screen and (max-width: 550px) {
+  .container.padding-top--md > div > div:first-child {
+    padding: 32px 32px 48px 32px !important;
+  }
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+
+table {
+  display: table;
+  width: 100%;
+  font-size: 14px;
+}
+
+th {
+  background-color: var(--ifm-table-header-bg) !important;
+  color: var(--ifm-table-header-color) !important;
+  font-family: "TTCommonsPro", monospace;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  color: var(--ifm-table-body-color);
+  font-size: 14px;
+}
+
+/* Dashed table row borders */
+tr {
+  position: relative;
+}
+
+/* ── Code Blocks ────────────────────────────────────────────── */
+
+code {
+  font-family: "FiraCode", monospace;
+  font-size: 12px;
+}
+
+.prism-code {
+  font-family: "FiraCode", monospace !important;
+  font-size: 12px !important;
+  border-radius: 8px;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+
+.footer {
+  background-color: #0e1013 !important;
+}
+
+.footer__title {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.footer__link-item {
+  font-family: "Haffer";
+  font-size: 14px;
+  font-weight: 200;
+}
+
+/* ── Last Updated ───────────────────────────────────────────── */
+
+.theme-last-updated {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-family: "FiraCode";
+}
+
+/* ── Pagination ─────────────────────────────────────────────── */
+
+.pagination-nav__link {
+  border: none;
+  font-family: "DM Mono", monospace;
+}
+
+.pagination-nav__link--prev .pagination-nav__label::before {
+  content: "";
+}
+
+.pagination-nav__link--next .pagination-nav__label::after {
+  content: "";
+}
+
+/* ── Mermaid Diagrams ───────────────────────────────────────── */
+
+.docusaurus-mermaid-container {
+  margin: 1.5rem 0;
+  background: transparent;
+}
+
+.docusaurus-mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Admonitions ────────────────────────────────────────────── */
+
+.admonition {
+  border-radius: 8px;
+}
+
+/* ── Dropdown Menus ─────────────────────────────────────────── */
+
+.dropdown__menu {
+  padding: 0;
+  min-width: 200px !important;
+  border: 1px solid var(--ifm-navbar-border);
+  box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+.dropdown__menu .dropdown__link {
+  padding: 7px 20px !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  color: var(--text-secondary);
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* ── Hero Banner (Landing Page) ─────────────────────────────── */
+
+.hero {
+  background: linear-gradient(135deg, #0e1013 0%, #1a1d22 50%, #0e1013 100%);
+}
+
+[data-theme="light"] .hero {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%);
+  color: #0e1013;
+}
+
+.hero__title {
+  font-family: "Haffer";
+  font-weight: 400;
+  font-size: 48px;
+}
+
+.hero__subtitle {
+  font-family: "Haffer";
+  font-weight: 200;
+  font-size: 18px;
+}
+
+/* ── Landing Page Card Contrast Fixes ───────────────────────── */
+
+/* Dark mode: card links should not be white (invisible on hover) */
+[data-theme="dark"] .hero .button--primary {
+  background-color: #e3e3e3;
+  border-color: #e3e3e3;
+  color: #0e1013;
+}
+
+[data-theme="dark"] .hero .button--primary:hover {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #0e1013;
+}
+
+[data-theme="dark"] .hero .button--outline {
+  color: #e3e3e3;
+  border-color: #e3e3e3;
+}
+
+[data-theme="dark"] .hero .button--outline:hover {
+  background-color: rgba(227, 227, 227, 0.1);
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+/* Light mode hero buttons */
+[data-theme="light"] .hero .button--primary {
+  background-color: #0e1013;
+  border-color: #0e1013;
+  color: #ffffff;
+}
+
+[data-theme="light"] .hero .button--primary:hover {
+  background-color: #2a2d32;
+  border-color: #2a2d32;
+  color: #ffffff;
+}
+
+[data-theme="light"] .hero .button--outline {
+  color: #0e1013;
+  border-color: #0e1013;
+}
+
+[data-theme="light"] .hero .button--outline:hover {
+  background-color: rgba(14, 16, 19, 0.08);
+  color: #0e1013;
+}
+
+/* ── Footer Contrast Fixes ──────────────────────────────────── */
+
+/* Footer always has dark bg (#0e1013), so text/links must always be light */
+.footer {
+  color: #a5abaf !important;
+}
+
+.footer__title {
+  color: #e3e3e3 !important;
+}
+
+.footer__link-item {
+  color: #a5abaf !important;
+}
+
+.footer__link-item:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}
+
+.footer__copyright {
+  color: #5f6368 !important;
+}
+
+/* Force footer link colors in both light and dark modes */
+[data-theme="light"] .footer__link-item {
+  color: #a5abaf !important;
+}
+
+[data-theme="light"] .footer__link-item:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .footer__link-item {
+  color: #a5abaf !important;
+}
+
+[data-theme="dark"] .footer__link-item:hover {
+  color: #ffffff !important;
+}
+
+/* ── Landing Page Feature Cards ─────────────────────────────── */
+
+/* Ensure card description text is readable in both modes */
+[data-theme="dark"] .col p {
+  color: #a5abaf !important;
+}
+
+[data-theme="light"] .col p {
+  color: #5f6368 !important;
+}
+
+/* ── Global Link Hover Contrast ─────────────────────────────── */
+
+/* Ensure links in content area have good contrast on hover */
+[data-theme="dark"] .markdown a:hover {
+  color: #ffffff;
+}
+
+[data-theme="light"] .markdown a:hover {
+  color: #000000;
+}
+
+/* ── Dark mode body text ────────────────────────────────────── */
+
+[data-theme="dark"] body {
+  color: #e3e3e3;
+}
+
+[data-theme="dark"] p {
+  color: #e3e3e3 !important;
+}
+
+[data-theme="dark"] li {
+  color: #e3e3e3;
+}
+
+[data-theme="dark"] td {
+  color: #d7e3e3;
+}
+
+/* ── Search Bar (Cmd+K / Ctrl+K) ────────────────────────────── */
+
+/* Override the search local plugin styling to match Bittensor docs */
+.navbar .DocSearch-Button,
+.navbar [class*="searchBar"] {
+  font-family: "DM Mono", monospace !important;
+  font-size: 12px !important;
+  letter-spacing: 0.6px;
+}
+
+/* Search modal styling */
+:root {
+  --aa-primary-color-rgb: 14, 16, 19;
+  --aa-muted-color-rgb: 95, 99, 104;
+  --aa-input-border-color-rgb: 219, 221, 225;
+}
+
+[data-theme="dark"] {
+  --aa-primary-color-rgb: 227, 227, 227;
+  --aa-muted-color-rgb: 165, 171, 175;
+  --aa-input-border-color-rgb: 40, 42, 45;
+}
+
+/* Search input container */
+.aa-DetachedSearchButton,
+[class*="searchQueryInput"] {
+  font-family: "DM Mono", monospace !important;
+  border: 1px solid var(--ifm-navbar-border) !important;
+  border-radius: 4px !important;
+  background-color: var(--ifm-background-color) !important;
+}
+
+/* Search shortcut hint styling */
+.aa-DetachedSearchButtonKeys,
+[class*="searchBarShortcutHint"] {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  border: 1px solid #5f6368;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #5f6368;
+}
+
+/* Search result items */
+.aa-ItemContentTitle,
+[class*="searchResultItemHeading"] {
+  font-family: "Haffer" !important;
+  font-weight: 400 !important;
+}
+
+[class*="searchResultItemPath"] {
+  font-family: "DM Mono", monospace !important;
+  font-size: 11px !important;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Search modal overlay */
+[class*="searchBarContainer"] input {
+  font-family: "DM Mono", monospace !important;
+  font-size: 14px !important;
+}
+
+/* Keyboard shortcut badges in search */
+[class*="searchBarLoadingRing"],
+.search-bar-shortcut {
+  font-family: "DM Mono", monospace;
+}
