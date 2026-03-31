@@ -3,11 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useDataSource } from "./data-source-context";
 import { mockMiners, mockValidators, mockNetworkStats } from "./mock-data";
 import {
-  fetchMetagraph,
-  fetchSubnetInfo,
+  fetchChainSnapshot,
   mapNeuronToMiner,
   mapNeuronToValidator,
-  mapSubnetToNetworkStats,
+  mapSnapshotToNetworkStats,
 } from "./taostats";
 import type { MinerProfile, ValidatorProfile, NetworkStats } from "./types";
 
@@ -47,27 +46,24 @@ export function useNetworkData(): NetworkData {
 
     (async () => {
       try {
-        const [neurons, subnet] = await Promise.all([
-          fetchMetagraph(),
-          fetchSubnetInfo(),
-        ]);
+        const snapshot = await fetchChainSnapshot();
 
         if (cancelled) return;
 
-        const chainMiners = neurons
-          .filter((n) => !n.validator_permit)
-          .map(mapNeuronToMiner);
-        const chainValidators = neurons
-          .filter((n) => n.validator_permit)
+        const chainMiners = snapshot.neurons
+          .filter((n) => n.role === "miner")
+          .map((n) => mapNeuronToMiner(n, snapshot.block, snapshot.immunity_period));
+        const chainValidators = snapshot.neurons
+          .filter((n) => n.role === "validator")
           .map(mapNeuronToValidator);
-        const chainStats = mapSubnetToNetworkStats(subnet, neurons);
+        const chainStats = mapSnapshotToNetworkStats(snapshot);
 
         setMiners(chainMiners.length > 0 ? chainMiners : []);
         setValidators(chainValidators.length > 0 ? chainValidators : []);
         setNetworkStats(chainStats);
       } catch (e) {
         if (!cancelled) {
-          const message = e instanceof Error ? e.message : "Failed to fetch testnet data";
+          const message = e instanceof Error ? e.message : "Failed to fetch chain data";
           setError(`${message} — falling back to mock data`);
           setMiners(mockMiners);
           setValidators(mockValidators);

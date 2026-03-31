@@ -90,7 +90,7 @@ const MINER_COLDKEY = "5CswWXnGqrSLGFmHhhv6FVwD6t2gyhmByQirvG2yHwPaZ7Yg";
 export const mockMiners: MinerProfile[] = [
   {
     uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 34.11, registration_block: 6_798_200, blocks_since_registration: 5_900,
+    role: "miner", stake: 48.62, registration_block: 6_798_200, blocks_since_registration: 5_900,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 92,
     scores: { composite: 0.862, success: 0.93, cost: 0.80, latency: 0.83, reliability: 0.96 },
     score_history: generateScoreHistory(0.862, 0.08, 100), weight: 0.148, weight_capped: false,
@@ -102,7 +102,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 4, hotkey: "5Cu1eA4n2ggvZRp5BD9GmJUmk6bhvwzcPAMAHjndY29ZEJ9G", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 24.65, registration_block: 6_798_600, blocks_since_registration: 5_500,
+    role: "miner", stake: 39.15, registration_block: 6_798_600, blocks_since_registration: 5_500,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 78,
     scores: { composite: 0.824, success: 0.89, cost: 0.78, latency: 0.76, reliability: 0.91 },
     score_history: generateScoreHistory(0.824, 0.10, 100), weight: 0.137, weight_capped: false,
@@ -114,7 +114,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 5, hotkey: "5DyTRnje55b39a5QKLvp8MiDPeJoAitdKzDZ3rnjtW3NkLzq", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 18.64, registration_block: 6_799_000, blocks_since_registration: 5_100,
+    role: "miner", stake: 33.15, registration_block: 6_799_000, blocks_since_registration: 5_100,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 71,
     scores: { composite: 0.798, success: 0.86, cost: 0.75, latency: 0.74, reliability: 0.88 },
     score_history: generateScoreHistory(0.798, 0.09, 100), weight: 0.125, weight_capped: false,
@@ -125,7 +125,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 9, hotkey: "5F1Dq8XweDtaAmyTwu2DfazrjwJnvGBoSRp7ZDbfsEZz1tnA", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 14.59, registration_block: 6_800_600, blocks_since_registration: 3_500,
+    role: "miner", stake: 29.10, registration_block: 6_800_600, blocks_since_registration: 3_500,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 64,
     scores: { composite: 0.771, success: 0.83, cost: 0.72, latency: 0.71, reliability: 0.86 },
     score_history: generateScoreHistory(0.771, 0.11, 100), weight: 0.114, weight_capped: false,
@@ -137,7 +137,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 6, hotkey: "5DyhnBtsNdTgnGZEeWs3bwFF33e3tLHNRzCUcWUJKiutpX1C", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 11.73, registration_block: 6_799_400, blocks_since_registration: 4_700,
+    role: "miner", stake: 26.23, registration_block: 6_799_400, blocks_since_registration: 4_700,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 58,
     scores: { composite: 0.743, success: 0.80, cost: 0.69, latency: 0.68, reliability: 0.83 },
     score_history: generateScoreHistory(0.743, 0.12, 100), weight: 0.106, weight_capped: false,
@@ -149,7 +149,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 7, hotkey: "5GrjCoBdoXh6XZkGrnLCWbLonM8RZEwsnhqHEJqRM2YN98Sk", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 9.64, registration_block: 6_799_800, blocks_since_registration: 4_300,
+    role: "miner", stake: 24.14, registration_block: 6_799_800, blocks_since_registration: 4_300,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 52,
     scores: { composite: 0.718, success: 0.78, cost: 0.66, latency: 0.65, reliability: 0.80 },
     score_history: generateScoreHistory(0.718, 0.13, 100), weight: 0.098, weight_capped: false,
@@ -160,7 +160,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 8, hotkey: "5GxyEtrJNxHD1S3E7BEgS4HgpzcQZc1QpzS8F4DyWZxniiGs", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 8.06, registration_block: 6_800_200, blocks_since_registration: 3_900,
+    role: "miner", stake: 22.56, registration_block: 6_800_200, blocks_since_registration: 3_900,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 45,
     scores: { composite: 0.691, success: 0.75, cost: 0.63, latency: 0.62, reliability: 0.78 },
     score_history: generateScoreHistory(0.691, 0.14, 100), weight: 0.088, weight_capped: false,
@@ -172,7 +172,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 10, hotkey: "5HHWx8iQYEmg8dThTjdUYUs568Qt2bvEgixNxSggBnHk1BKZ", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 6.84, registration_block: 6_801_000, blocks_since_registration: 3_100,
+    role: "miner", stake: 21.35, registration_block: 6_801_000, blocks_since_registration: 3_100,
     immunity_active: true, immunity_blocks_remaining: 1_900, tasks_seen: 18,
     scores: { composite: 0.652, success: 0.72, cost: 0.60, latency: 0.58, reliability: 0.74 },
     score_history: generateScoreHistory(0.652, 0.15, 18), weight: 0.068, weight_capped: false,
@@ -183,7 +183,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 11, hotkey: "5FqZHjZb3fNsAj7VzvNyxjvavepB7REMbsv8E5QViB7PML8L", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 5.88, registration_block: 6_801_400, blocks_since_registration: 2_700,
+    role: "miner", stake: 20.38, registration_block: 6_801_400, blocks_since_registration: 2_700,
     immunity_active: true, immunity_blocks_remaining: 2_300, tasks_seen: 12,
     scores: { composite: 0.608, success: 0.68, cost: 0.57, latency: 0.54, reliability: 0.70 },
     score_history: generateScoreHistory(0.608, 0.16, 12), weight: 0.052, weight_capped: false,
@@ -194,7 +194,7 @@ export const mockMiners: MinerProfile[] = [
   },
   {
     uid: 2, hotkey: "5H1MrhNSaBJCMsoNNf6KnzA5HG8VVPAsH1JbSvFwjbSp1iaw", coldkey: MINER_COLDKEY,
-    role: "miner", stake: 1.11, registration_block: 6_797_800, blocks_since_registration: 6_300,
+    role: "miner", stake: 18.59, registration_block: 6_797_800, blocks_since_registration: 6_300,
     immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 8,
     scores: { composite: 0.558, success: 0.62, cost: 0.52, latency: 0.50, reliability: 0.66 },
     score_history: generateScoreHistory(0.558, 0.18, 8), weight: 0.040, weight_capped: false,
@@ -210,15 +210,15 @@ export const mockMiners: MinerProfile[] = [
 const VALI_COLDKEY = "5GWjFybcbmdHArkFQZAVZhyz1My1WgqNqGKzRrHML1pHpbG1";
 
 export const mockValidators: ValidatorProfile[] = [
-  { uid: 1, hotkey: "5GYi8aRkGCqQH8YScK4yYDkfZx6DtLVz3G5WJigwwbennZz8", coldkey: VALI_COLDKEY, role: "validator", stake: 626.61, vtrust: 0.95, last_weight_set_block: 6_804_000, scoring_version: "1.0.0", benchmark_version: "v1" },
-  { uid: 12, hotkey: "5EJTJaqfvQovvEKVssXQ6bAfYbJKw71NtktBtHhz1EAiLwaF", coldkey: VALI_COLDKEY, role: "validator", stake: 14.77, vtrust: 0.91, last_weight_set_block: 6_803_980, scoring_version: "1.0.0", benchmark_version: "v1" },
-  { uid: 13, hotkey: "5CyPsnqJBnZJgwHvPw9rbvagAzNU7VmdBk5juPyGmLD694Qw", coldkey: VALI_COLDKEY, role: "validator", stake: 10.05, vtrust: 0.87, last_weight_set_block: 6_803_950, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 1, hotkey: "5GYi8aRkGCqQH8YScK4yYDkfZx6DtLVz3G5WJigwwbennZz8", coldkey: VALI_COLDKEY, role: "validator", stake: 637.87, vtrust: 0.999985, last_weight_set_block: 6_804_500, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 12, hotkey: "5EJTJaqfvQovvEKVssXQ6bAfYbJKw71NtktBtHhz1EAiLwaF", coldkey: VALI_COLDKEY, role: "validator", stake: 15.03, vtrust: 0.979446, last_weight_set_block: 6_804_480, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 13, hotkey: "5CyPsnqJBnZJgwHvPw9rbvagAzNU7VmdBk5juPyGmLD694Qw", coldkey: VALI_COLDKEY, role: "validator", stake: 10.23, vtrust: 0.981277, last_weight_set_block: 6_804_450, scoring_version: "1.0.0", benchmark_version: "v1" },
 ];
 
 // ── Network Stats ─────────────────────────────────────────────────
 
 export const mockNetworkStats: NetworkStats = {
-  current_block: 6_804_100,
+  current_block: 6_804_586,
   current_tempo: 123,
   tasks_this_tempo: 28,
   active_miners: 10,

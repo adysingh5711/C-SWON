@@ -1,97 +1,54 @@
 import type { MinerProfile, ValidatorProfile, NetworkStats, ScoreBreakdownData } from "./types";
 
-// ── Raw Taostats response types ──────────────────────────────────
+// ── Chain snapshot types (from scripts/dump-metagraph.py) ───────
 
-interface TaostatsAddress {
-  ss58: string;
-  hex: string;
-}
-
-interface TaostatsNeuron {
-  hotkey: TaostatsAddress;
-  coldkey: TaostatsAddress;
-  netuid: number;
+interface ChainNeuron {
   uid: number;
-  block_number: number;
-  timestamp: string;
-  stake: string;
-  trust: string;
-  validator_trust: string;
-  consensus: string;
-  incentive: string;
-  dividends: string;
-  emission: string;
+  hotkey: string;
+  coldkey: string;
+  stake: number;
+  validator_trust: number;
+  consensus: number;
+  incentive: number;
+  dividends: number;
+  emission: number;
   active: boolean;
   validator_permit: boolean;
-  updated: number;
-  daily_reward: string;
-  registered_at_block: number;
-  is_immunity_period: boolean;
-  rank: number;
-  axon: {
-    block: number;
-    ip: string;
-    port: number;
-    protocol: number;
-    version: number;
-  };
+  role: "validator" | "miner" | "inactive";
 }
 
-interface TaostatsSubnet {
-  block_number: number;
-  timestamp: string;
+interface ChainSnapshot {
+  block: number;
   netuid: number;
-  owner: TaostatsAddress;
-  active_keys: number;
-  active_validators: number;
-  active_miners: number;
-  emission: string;
+  network: string;
+  n: number;
   tempo: number;
   immunity_period: number;
-  blocks_since_last_step: number;
-  blocks_until_next_epoch: number;
+  neurons: ChainNeuron[];
 }
 
-// ── Fetch functions (hit our proxy routes) ───────────────────────
+// ── Fetch (reads static snapshot from /chain-data/metagraph.json) ─
 
-let metagraphCache: { data: TaostatsNeuron[]; ts: number } | null = null;
-let subnetCache: { data: TaostatsSubnet; ts: number } | null = null;
+let snapshotCache: { data: ChainSnapshot; ts: number } | null = null;
 const CACHE_TTL = 60_000;
 
-export async function fetchMetagraph(): Promise<TaostatsNeuron[]> {
-  if (metagraphCache && Date.now() - metagraphCache.ts < CACHE_TTL) {
-    return metagraphCache.data;
+export async function fetchChainSnapshot(): Promise<ChainSnapshot> {
+  if (snapshotCache && Date.now() - snapshotCache.ts < CACHE_TTL) {
+    return snapshotCache.data;
   }
 
-  const res = await fetch("/api/taostats/metagraph");
+  const res = await fetch("/chain-data/metagraph.json");
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Metagraph fetch failed (${res.status})`);
+    throw new Error(`Chain snapshot fetch failed (${res.status})`);
   }
 
-  const json = await res.json();
-  const neurons: TaostatsNeuron[] = Array.isArray(json) ? json : json.data ?? [];
-  metagraphCache = { data: neurons, ts: Date.now() };
-  return neurons;
-}
-
-export async function fetchSubnetInfo(): Promise<TaostatsSubnet> {
-  if (subnetCache && Date.now() - subnetCache.ts < CACHE_TTL) {
-    return subnetCache.data;
+  const data: ChainSnapshot = await res.json();
+  if (!data.neurons || data.neurons.length === 0) {
+    throw new Error("Chain snapshot is empty");
   }
 
-  const res = await fetch("/api/taostats/subnet");
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Subnet fetch failed (${res.status})`);
-  }
-
-  const json = await res.json();
-  const subnets = Array.isArray(json) ? json : json.data ?? [];
-  const subnet = subnets.find((s: TaostatsSubnet) => s.netuid === 26) ?? subnets[0];
-  if (!subnet) throw new Error("Subnet 26 not found in Taostats response");
-  subnetCache = { data: subnet, ts: Date.now() };
-  return subnet;
+  snapshotCache = { data, ts: Date.now() };
+  return data;
 }
 
 // ── Mappers ──────────────────────────────────────────────────────
@@ -104,54 +61,50 @@ const CHAIN_ONLY_SCORES: ScoreBreakdownData = {
   reliability: 0,
 };
 
-export function mapNeuronToMiner(n: TaostatsNeuron): MinerProfile {
-  const incentive = parseFloat(n.incentive) || 0;
+export function mapNeuronToMiner(n: ChainNeuron, block: number, immunityPeriod: number): MinerProfile {
   return {
     uid: n.uid,
-    hotkey: n.hotkey.ss58,
-    coldkey: n.coldkey.ss58,
+    hotkey: n.hotkey,
+    coldkey: n.coldkey,
     role: "miner",
-    stake: parseFloat(n.stake) / 1e9,
-    registration_block: n.registered_at_block,
-    blocks_since_registration: n.block_number - n.registered_at_block,
-    immunity_active: n.is_immunity_period,
-    immunity_blocks_remaining: n.is_immunity_period ? Math.max(0, 5000 - (n.block_number - n.registered_at_block)) : 0,
+    stake: n.stake,
+    registration_block: 0,
+    blocks_since_registration: 0,
+    immunity_active: false,
+    immunity_blocks_remaining: 0,
     tasks_seen: 0,
-    scores: { ...CHAIN_ONLY_SCORES, composite: incentive },
+    scores: { ...CHAIN_ONLY_SCORES, composite: n.incentive },
     score_history: [],
-    weight: incentive,
+    weight: n.incentive,
     weight_capped: false,
     subnet_stats: {},
     recent_workflows: [],
   };
 }
 
-export function mapNeuronToValidator(n: TaostatsNeuron): ValidatorProfile {
+export function mapNeuronToValidator(n: ChainNeuron): ValidatorProfile {
   return {
     uid: n.uid,
-    hotkey: n.hotkey.ss58,
-    coldkey: n.coldkey.ss58,
+    hotkey: n.hotkey,
+    coldkey: n.coldkey,
     role: "validator",
-    stake: parseFloat(n.stake) / 1e9,
-    vtrust: parseFloat(n.validator_trust) || 0,
-    last_weight_set_block: n.updated,
+    stake: n.stake,
+    vtrust: n.validator_trust,
+    last_weight_set_block: 0,
     scoring_version: "chain",
     benchmark_version: "chain",
   };
 }
 
-export function mapSubnetToNetworkStats(
-  subnet: TaostatsSubnet,
-  neurons: TaostatsNeuron[]
-): NetworkStats {
-  const activeMiners = neurons.filter((n) => !n.validator_permit && n.active).length;
-  const activeValidators = neurons.filter((n) => n.validator_permit && n.active).length;
+export function mapSnapshotToNetworkStats(snapshot: ChainSnapshot): NetworkStats {
+  const miners = snapshot.neurons.filter((n) => n.role === "miner");
+  const validators = snapshot.neurons.filter((n) => n.role === "validator");
   return {
-    current_block: subnet.block_number,
-    current_tempo: Math.floor(subnet.blocks_since_last_step),
+    current_block: snapshot.block,
+    current_tempo: snapshot.tempo,
     tasks_this_tempo: 0,
-    active_miners: activeMiners || subnet.active_miners,
-    active_validators: activeValidators || subnet.active_validators,
+    active_miners: miners.filter((n) => n.active).length || miners.length,
+    active_validators: validators.filter((n) => n.active).length || validators.length,
     tasks_evaluated: 0,
   };
 }
