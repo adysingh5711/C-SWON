@@ -84,10 +84,10 @@ sidebar_position: 1
 
 | | |
 |---|---|
-| ✉ **Email** | [singhaditya5711@gmail.com](mailto:singhaditya5711@gmail.com) |
-| 𝕏 **Twitter** | [@singhaditya5711](https://x.com/singhaditya5711) |
-| ✈ **Telegram** | [@singhaditya5711](https://t.me/singhaditya5711) |
-| 🔗 **LinkedIn** | [singhaditya5711](https://www.linkedin.com/in/singhaditya5711/) |
+| **Email** | [singhaditya5711@gmail.com](mailto:singhaditya5711@gmail.com) |
+| **Twitter** | [@singhaditya5711](https://x.com/singhaditya5711) |
+| **Telegram** | [@singhaditya5711](https://t.me/singhaditya5711) |
+| **LinkedIn** | [singhaditya5711](https://www.linkedin.com/in/singhaditya5711/) |
 
 ---
 

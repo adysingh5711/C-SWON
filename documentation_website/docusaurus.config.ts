@@ -1,5 +1,5 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
@@ -22,6 +22,7 @@ const config: Config = {
   trailingSlash: false,
 
   onBrokenLinks: 'warn',
+  staticDirectories: ['static', '../frontend/public'],
 
   markdown: {
     mermaid: true,
@@ -89,7 +90,7 @@ const config: Config = {
     image: 'img/cswon-social-card.png',
     colorMode: {
       defaultMode: 'light',
-      respectPrefersColorScheme: true,
+      respectPrefersColorScheme: false,
     },
     mermaid: {
       theme: {
@@ -116,7 +117,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://youtu.be/X2RZts7AXX0',
+          href: 'https://youtu.be/XmyTpWDTs5g',
           label: 'Demo',
           position: 'right',
         },
