@@ -228,15 +228,6 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Footer */}
-      <footer className="mx-auto mt-20 max-w-6xl border-t border-border pt-10 text-center text-sm text-ink-tertiary pb-6">
-        <div className="flex items-center justify-center gap-8">
-          <a href="https://github.com/adysingh5711/C-SWON" target="_blank" rel="noopener noreferrer" className="font-medium transition-colors hover:text-ink">GitHub</a>
-          <a href="https://docs.learnbittensor.org" target="_blank" rel="noopener noreferrer" className="font-medium transition-colors hover:text-ink">Bittensor Docs</a>
-          <span className="font-medium text-ink-muted">Whitepaper (upcoming)</span>
-        </div>
-        <p className="mt-6">C-SWON — Cross-Subnet Workflow Orchestration Network</p>
-      </footer>
     </div>
   );
 }

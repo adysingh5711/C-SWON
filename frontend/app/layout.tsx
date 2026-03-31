@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 import { seoConfig } from "@/lib/seo.config";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -98,7 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <DataSourceProvider>
             <Nav />
-            <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+            <main className="mx-auto max-w-7xl px-6 py-8 min-h-[calc(100vh-13rem)]">{children}</main>
+            <Footer />
           </DataSourceProvider>
         </ThemeProvider>
         <Analytics />
