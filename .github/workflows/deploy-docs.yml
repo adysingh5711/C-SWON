@@ -30,8 +30,7 @@ jobs:
         working-directory: documentation_website
 
       - name: Deploy to GitHub Pages
-        working-directory: documentation_website
-        env:
-          GIT_USER: adysingh5711
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./documentation_website/build
