@@ -13,7 +13,8 @@
 | | |
 |---|---|
 | **Testnet Netuid** | `26` — [Verify live](https://test.taostats.io/) |
-| **Demo Video** | [youtu.be/X2RZts7AXX0](https://youtu.be/X2RZts7AXX0) |
+| **Demo Video** | [youtu.be/XmyTpWDTs5g](https://youtu.be/XmyTpWDTs5g) |
+| **Pitch Video** | [youtu.be/klJUeZswmoE](https://youtu.be/klJUeZswmoE) |
 | **Documentation** | [adysingh5711.github.io/C-SWON](https://adysingh5711.github.io/C-SWON/) |
 | **Frontend** | [c-swon.vercel.app](https://c-swon.vercel.app/) |
 
@@ -50,29 +51,34 @@ C-SWON is a Bittensor subnet where **the mined commodity is optimal workflow pol
 
 ```mermaid
 flowchart LR
+    classDef miner fill:#b45309,stroke:#fcd34d,color:#fff
+    classDef validator fill:#1d4ed8,stroke:#93c5fd,color:#fff
+    classDef formula fill:#065f46,stroke:#6ee7b7,color:#fff
+
     subgraph Validator
-        V1[Select Task via VRF]
-        V2[Send Task Package]
-        V5[Execute DAG in Docker]
-        V6[Score Result]
-        V7[set_weights per tempo]
+        V1[Select Task via VRF]:::validator
+        V2[Send Task Package]:::validator
+        V5[Execute DAG in Docker]:::validator
+        V6[Score Result]:::formula
+        V7[set_weights per tempo]:::validator
     end
 
     subgraph Miner
-        M1[Receive Task]
-        M2[Design DAG Plan]
-        M3[Return WorkflowSynapse]
+        M1[Receive Task]:::miner
+        M2[Design DAG Plan]:::miner
+        M3[Return WorkflowSynapse]:::miner
     end
 
     subgraph Partners["Partner Subnets"]
         SN1["SN1 Text"]
         SN62["SN62 Code Review"]
         SN45["SN45 Testing"]
+        SN64["SN64 Inference"]
     end
 
     V1 --> V2 --> M1 --> M2 --> M3 --> V5
-    V5 --> SN1 & SN62 & SN45
-    SN1 & SN62 & SN45 --> V6 --> V7
+    V5 --> SN1 & SN62 & SN45 & SN64
+    SN1 & SN62 & SN45 & SN64 --> V6 --> V7
 ```
 
 ---
@@ -80,10 +86,16 @@ flowchart LR
 ## Emission Structure
 
 ```mermaid
-pie title Alpha Emission Split per Tempo
-    "Miners (41%)" : 41
-    "Validators + Stakers (41%)" : 41
-    "Subnet Owner (18%)" : 18
+flowchart TD
+    classDef emission fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    classDef owner   fill:#4c1d95,stroke:#a78bfa,color:#fff
+    classDef miner   fill:#b45309,stroke:#fcd34d,color:#fff
+    classDef validator fill:#1d4ed8,stroke:#93c5fd,color:#fff
+
+    E([Total Alpha Emissions per Tempo]):::emission
+    E -->|41%| M[Miners]:::miner
+    E -->|41%| V[Validators + Stakers]:::validator
+    E -->|18%| O[Subnet Owner]:::owner
 ```
 
 Miner rewards are proportional to their composite score `W_i` via Yuma Consensus:
