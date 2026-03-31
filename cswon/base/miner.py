@@ -77,47 +77,19 @@ class BaseMinerNeuron(BaseNeuron):
                 "You are allowing non-registered entities to send requests to your miner. This is a security risk."
             )
         # The axon handles request processing, allowing validators to send this miner requests.
-        # Broadcast scoring version in axon metadata (readme §4.5)
-        from cswon.validator.config import SCORING_VERSION, __spec_version__ as CSWON_SPEC_VERSION
-        try:
-            self.axon = bt.Axon(
-                wallet=self.wallet,
-                config=self.config() if callable(self.config) else self.config,
-                info=bt.AxonInfo(
-                    version=CSWON_SPEC_VERSION,
-                    ip="0.0.0.0",
-                    port=0,
-                    ip_type=4,
-                    placeholder1=0,
-                    placeholder2=0,
-                    protocol=4,
-                    hotkey=self.wallet.hotkey.ss58_address,
-                    coldkey=self.wallet.coldkeypub.ss58_address,
-                ),
-            )
-            try:
-                self.axon.info.description = f"cswon-scoring:{SCORING_VERSION}"
-            except AttributeError:
-                pass  # older SDK — description field not available
-        except TypeError:
-            # Fallback for SDKs that don't support info= parameter
-            self.axon = bt.Axon(
-                wallet=self.wallet,
-                config=self.config() if callable(self.config) else self.config,
-            )
-
+        cfg = self.config() if callable(self.config) else self.config
+        self.axon = bt.Axon(wallet=self.wallet, config=cfg)
 
         # Attach determiners which functions are called when servicing a request.
-        bt.logging.info(f"Attaching forward function to miner axon.")
+        bt.logging.info("Attaching forward function to miner axon.")
         self.axon.attach(
             forward_fn=self.forward,
             blacklist_fn=self.blacklist,
             priority_fn=self.priority,
         )
-        
+
         bt.logging.info(
-            f"Axon created with synapses: "
-            f"{[type(s).__name__ for s in self.axon.forward_class_types]}"
+            f"Axon created with synapses: {list(self.axon.forward_class_types.keys())}"
         )
         bt.logging.info(f"Axon details: {self.axon}")
 

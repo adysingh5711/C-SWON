@@ -136,32 +136,7 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("serving ip to chain...")
         try:
             # Broadcast scoring version in axon metadata (readme §4.5)
-            try:
-                self.axon = bt.Axon(
-                    wallet=self.wallet,
-                    config=self.config,
-                    info=bt.AxonInfo(
-                        version=CSWON_SPEC_VERSION,
-                        ip="0.0.0.0",
-                        port=0,
-                        ip_type=4,
-                        placeholder1=0,
-                        placeholder2=0,
-                        protocol=4,
-                        hotkey=self.wallet.hotkey.ss58_address,
-                        coldkey=self.wallet.coldkeypub.ss58_address,
-                    ),
-                )
-                # Broadcast both scoring version AND benchmark version (readme §4.5/§4.7, issue 2.2)
-                try:
-                    self.axon.info.description = (
-                        f"cswon-scoring:{SCORING_VERSION};cswon-bench:{BENCHMARK_VERSION}"
-                    )
-                except AttributeError:
-                    pass  # older SDK
-            except TypeError:
-                # Fallback for SDKs that don't support info= parameter
-                self.axon = bt.Axon(wallet=self.wallet, config=self.config)
+            self.axon = bt.Axon(wallet=self.wallet, config=self.config)
 
             try:
                 serve_ip = self.axon.external_ip
