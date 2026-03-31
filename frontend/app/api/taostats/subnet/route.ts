@@ -5,10 +5,10 @@ export const revalidate = 60;
 
 export async function GET() {
   const apiKey = process.env.TAOSTATS_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || apiKey === "your-api-key-here") {
     return Response.json(
-      { error: "TAOSTATS_API_KEY not configured" },
-      { status: 500 }
+      { error: "TAOSTATS_API_KEY not configured. Get a free key at taostats.io and set it in .env.local" },
+      { status: 503 }
     );
   }
 
@@ -24,17 +24,16 @@ export async function GET() {
     );
 
     if (!res.ok) {
-      return Response.json(
-        { error: `Taostats API returned ${res.status}` },
-        { status: res.status }
-      );
+      const body = await res.json().catch(() => ({}));
+      const msg = (body as Record<string, string>).message || `Taostats API returned ${res.status}`;
+      return Response.json({ error: msg }, { status: res.status });
     }
 
     const data = await res.json();
     return Response.json(data);
   } catch {
     return Response.json(
-      { error: "Failed to reach Taostats API" },
+      { error: "Failed to reach Taostats API — check your network connection" },
       { status: 502 }
     );
   }

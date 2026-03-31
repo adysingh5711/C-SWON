@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import { ScoreGauge } from "@/components/score-gauge";
 import { WeightBar } from "@/components/weight-bar";
-import { truncateKey, formatScore, formatPercent } from "@/lib/utils";
+import { formatScore, formatPercent } from "@/lib/utils";
 import { scoring } from "@/lib/constants";
 import { useNetworkData } from "@/lib/use-network-data";
 import { useDataSource } from "@/lib/data-source-context";
 import { DataSourceToggle } from "@/components/data-source-toggle";
+import { CopyableAddress } from "@/components/copyable-address";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
@@ -58,6 +59,7 @@ function ExplorerContent() {
     );
   }
 
+  // ── Grid view (no UID selected) ──────────────────────────────
   if (!uidParam) {
     return (
       <div className="space-y-10 pb-12">
@@ -79,7 +81,9 @@ function ExplorerContent() {
                   <span className="font-mono text-base font-bold text-ink">UID {m.uid}</span>
                   <Badge variant="outline" className="border-teal/30 text-teal bg-teal/5">miner</Badge>
                 </div>
-                <p className="mt-2 font-mono text-xs text-ink-tertiary group-hover:text-ink-secondary transition-colors">{truncateKey(m.hotkey)}</p>
+                <div className="mt-2">
+                  <CopyableAddress address={m.hotkey} className="text-xs text-ink-tertiary group-hover:text-ink-secondary" />
+                </div>
                 <div className="mt-5 flex items-end justify-between">
                   <div>
                     <p className="text-[10px] uppercase font-medium text-ink-muted mb-1">Composite Score</p>
@@ -96,12 +100,18 @@ function ExplorerContent() {
           <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-teal">Validators</h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {validators.map((v) => (
-              <div key={v.uid} className="rounded-2xl border border-border bg-surface-0/50 p-6 shadow-sm backdrop-blur-md">
+              <div
+                key={v.uid}
+                onClick={() => router.push(`/explorer?uid=${v.uid}`)}
+                className="group cursor-pointer rounded-2xl border border-border bg-surface-0/50 p-6 shadow-sm backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-surface-0"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-base font-bold text-ink">UID {v.uid}</span>
                   <Badge variant="secondary" className="bg-purple/15 text-purple shadow-none border-none">validator</Badge>
                 </div>
-                <p className="mt-2 font-mono text-xs text-ink-tertiary">{truncateKey(v.hotkey)}</p>
+                <div className="mt-2">
+                  <CopyableAddress address={v.hotkey} className="text-xs text-ink-tertiary group-hover:text-ink-secondary" />
+                </div>
                 <div className="mt-5 grid grid-cols-2 gap-4 text-xs font-medium">
                   <div>
                     <p className="text-[10px] uppercase text-ink-muted mb-1">Stake</p>
@@ -120,6 +130,7 @@ function ExplorerContent() {
     );
   }
 
+  // ── Detail view ──────────────────────────────────────────────
   const uid = Number(uidParam);
   const miner = miners.find((m) => m.uid === uid);
   const validator = validators.find((v) => v.uid === uid);
@@ -149,9 +160,9 @@ function ExplorerContent() {
                   </Badge>
                 )}
               </div>
-              <div className="space-y-1 font-mono text-sm text-ink-tertiary">
-                <p>Hotkey: <span className="text-ink-secondary font-medium">{truncateKey(miner.hotkey, 10)}</span></p>
-                <p>Coldkey: <span className="text-ink-secondary font-medium">{truncateKey(miner.coldkey, 10)}</span></p>
+              <div className="space-y-1 text-sm text-ink-tertiary">
+                <p className="flex items-center gap-2">Hotkey: <CopyableAddress address={miner.hotkey} chars={10} className="text-ink-secondary font-medium" /></p>
+                <p className="flex items-center gap-2">Coldkey: <CopyableAddress address={miner.coldkey} chars={10} className="text-ink-secondary font-medium" /></p>
               </div>
             </div>
             <div className="sm:text-right rounded-xl border border-border bg-surface-1 p-5 self-start">
@@ -254,9 +265,9 @@ function ExplorerContent() {
             <h1 className="font-mono text-3xl font-extrabold text-ink">UID {validator.uid}</h1>
             <Badge variant="secondary" className="bg-purple/15 text-purple shadow-none border-none">validator</Badge>
           </div>
-          <div className="space-y-1 font-mono text-sm text-ink-tertiary">
-            <p>Hotkey: <span className="text-ink-secondary">{truncateKey(validator.hotkey, 10)}</span></p>
-            <p>Coldkey: <span className="text-ink-secondary">{truncateKey(validator.coldkey, 10)}</span></p>
+          <div className="space-y-1 text-sm text-ink-tertiary">
+            <p className="flex items-center gap-2">Hotkey: <CopyableAddress address={validator.hotkey} chars={10} className="text-ink-secondary font-medium" /></p>
+            <p className="flex items-center gap-2">Coldkey: <CopyableAddress address={validator.coldkey} chars={10} className="text-ink-secondary font-medium" /></p>
           </div>
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 rounded-xl border border-border bg-surface-1 p-6">
             <div>

@@ -21,7 +21,7 @@ interface NetworkData {
 }
 
 export function useNetworkData(): NetworkData {
-  const { source } = useDataSource();
+  const { source, setSource } = useDataSource();
   const [miners, setMiners] = useState<MinerProfile[]>(mockMiners);
   const [validators, setValidators] = useState<ValidatorProfile[]>(mockValidators);
   const [networkStats, setNetworkStats] = useState<NetworkStats>(mockNetworkStats);
@@ -67,7 +67,12 @@ export function useNetworkData(): NetworkData {
         setNetworkStats(chainStats);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to fetch testnet data");
+          const message = e instanceof Error ? e.message : "Failed to fetch testnet data";
+          setError(`${message} — falling back to mock data`);
+          setMiners(mockMiners);
+          setValidators(mockValidators);
+          setNetworkStats(mockNetworkStats);
+          setSource("mock");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -75,7 +80,7 @@ export function useNetworkData(): NetworkData {
     })();
 
     return () => { cancelled = true; };
-  }, [source, fetchCount]);
+  }, [source, fetchCount, setSource]);
 
   return { miners, validators, networkStats, loading, error, retry };
 }

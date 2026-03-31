@@ -64,7 +64,7 @@ const fadeInUp = {
 
 export default function LandingPage() {
   return (
-    <div className="relative space-y-32 pb-24">
+    <div className="relative space-y-32 pb-0">
       {/* Background Decor */}
       <div className="absolute inset-x-0 top-0 -z-10 transform-gpu overflow-hidden blur-3xl" aria-hidden="true">
         <div

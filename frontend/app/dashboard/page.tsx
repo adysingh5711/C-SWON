@@ -9,7 +9,8 @@ import { WeightBar } from "@/components/weight-bar";
 import { LifecycleBadge } from "@/components/lifecycle-badge";
 import { TaskTypeIcon } from "@/components/task-type-icon";
 import { EmissionSankey } from "@/components/emission-sankey";
-import { truncateKey, formatScore, formatPercent } from "@/lib/utils";
+import { formatScore, formatPercent } from "@/lib/utils";
+import { CopyableAddress } from "@/components/copyable-address";
 import { useNetworkData } from "@/lib/use-network-data";
 import { useDataSource } from "@/lib/data-source-context";
 import { DataSourceToggle } from "@/components/data-source-toggle";
@@ -32,7 +33,7 @@ export default function DashboardPage() {
 
   const sharedColumns = [
     { key: "uid", label: "UID", render: (m: MinerProfile) => <span className="font-mono text-ink font-semibold">{m.uid}</span>, sortValue: (m: MinerProfile) => m.uid, mono: true },
-    { key: "hotkey", label: "Hotkey", render: (m: MinerProfile) => <span className="text-ink-tertiary">{truncateKey(m.hotkey)}</span>, mono: true },
+    { key: "hotkey", label: "Hotkey", render: (m: MinerProfile) => <CopyableAddress address={m.hotkey} className="text-ink-tertiary text-xs" />, mono: true },
     { key: "stake", label: "Stake", render: (m: MinerProfile) => <span className="font-mono text-ink-secondary">{m.stake.toLocaleString()} {isTestnet ? "\u05D1" : "\u03C4"}</span>, sortValue: (m: MinerProfile) => m.stake, mono: true, align: "right" as const },
     { key: "composite", label: isTestnet ? "Incentive" : "Score", render: (m: MinerProfile) => <span className="font-bold text-ink">{formatScore(m.scores.composite)}</span>, sortValue: (m: MinerProfile) => m.scores.composite, mono: true, align: "right" as const },
   ];
@@ -258,7 +259,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-base font-bold text-ink">UID {v.uid}</span>
-                    <span className="font-mono text-xs text-ink-tertiary">{truncateKey(v.hotkey)}</span>
+                    <CopyableAddress address={v.hotkey} className="text-xs text-ink-tertiary" />
                   </div>
                   <Badge variant="secondary" className="bg-purple/15 text-purple hover:bg-purple/25 shadow-none border-none">validator</Badge>
                 </div>
