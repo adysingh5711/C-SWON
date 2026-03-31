@@ -83,128 +83,155 @@ function generateScoreHistory(base: number, variance: number, count: number): nu
   });
 }
 
-// ── Miner Profiles ────────────────────────────────────────────────
+// ── Miner Profiles (10 miners — UIDs 2–11, testnet netuid 26) ────
+
+const MINER_COLDKEY = "5CswWXnGqrSLGFmHhhv6FVwD6t2gyhmByQirvG2yHwPaZ7Yg";
 
 export const mockMiners: MinerProfile[] = [
   {
-    uid: 1, hotkey: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", coldkey: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    role: "miner", stake: 1024.5, registration_block: 3_200_000, blocks_since_registration: 48_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 87,
-    scores: { composite: 0.847, success: 0.92, cost: 0.78, latency: 0.81, reliability: 0.95 },
-    score_history: generateScoreHistory(0.847, 0.08, 100), weight: 0.148, weight_capped: false,
+    uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 34.11, registration_block: 6_798_200, blocks_since_registration: 5_900,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 92,
+    scores: { composite: 0.862, success: 0.93, cost: 0.80, latency: 0.83, reliability: 0.96 },
+    score_history: generateScoreHistory(0.862, 0.08, 100), weight: 0.148, weight_capped: false,
     subnet_stats: {
-      sn1: { avg_cost: 0.0009, avg_latency: 0.45, reliability: 0.97, observations: 52 },
-      sn4: { avg_cost: 0.0028, avg_latency: 1.1, reliability: 0.93, observations: 35 },
+      sn1: { avg_cost: 0.0009, avg_latency: 0.44, reliability: 0.97, observations: 56 },
+      sn4: { avg_cost: 0.0027, avg_latency: 1.08, reliability: 0.94, observations: 36 },
     },
     recent_workflows: [],
   },
   {
-    uid: 2, hotkey: "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y", coldkey: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-    role: "miner", stake: 890.2, registration_block: 3_210_000, blocks_since_registration: 38_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 72,
-    scores: { composite: 0.812, success: 0.88, cost: 0.82, latency: 0.72, reliability: 0.90 },
-    score_history: generateScoreHistory(0.812, 0.10, 100), weight: 0.139, weight_capped: false,
+    uid: 4, hotkey: "5Cu1eA4n2ggvZRp5BD9GmJUmk6bhvwzcPAMAHjndY29ZEJ9G", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 24.65, registration_block: 6_798_600, blocks_since_registration: 5_500,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 78,
+    scores: { composite: 0.824, success: 0.89, cost: 0.78, latency: 0.76, reliability: 0.91 },
+    score_history: generateScoreHistory(0.824, 0.10, 100), weight: 0.137, weight_capped: false,
     subnet_stats: {
-      sn1: { avg_cost: 0.0010, avg_latency: 0.52, reliability: 0.94, observations: 45 },
-      sn4: { avg_cost: 0.0031, avg_latency: 1.3, reliability: 0.89, observations: 27 },
+      sn1: { avg_cost: 0.0010, avg_latency: 0.50, reliability: 0.94, observations: 48 },
+      sn4: { avg_cost: 0.0030, avg_latency: 1.28, reliability: 0.90, observations: 30 },
     },
     recent_workflows: [],
   },
   {
-    uid: 3, hotkey: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy", coldkey: "5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw",
-    role: "miner", stake: 756.8, registration_block: 3_220_000, blocks_since_registration: 28_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 65,
-    scores: { composite: 0.793, success: 0.85, cost: 0.75, latency: 0.78, reliability: 0.88 },
-    score_history: generateScoreHistory(0.793, 0.09, 100), weight: 0.128, weight_capped: false,
+    uid: 5, hotkey: "5DyTRnje55b39a5QKLvp8MiDPeJoAitdKzDZ3rnjtW3NkLzq", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 18.64, registration_block: 6_799_000, blocks_since_registration: 5_100,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 71,
+    scores: { composite: 0.798, success: 0.86, cost: 0.75, latency: 0.74, reliability: 0.88 },
+    score_history: generateScoreHistory(0.798, 0.09, 100), weight: 0.125, weight_capped: false,
     subnet_stats: {
-      sn1: { avg_cost: 0.0011, avg_latency: 0.48, reliability: 0.92, observations: 40 },
+      sn1: { avg_cost: 0.0011, avg_latency: 0.48, reliability: 0.92, observations: 42 },
     },
     recent_workflows: [],
   },
   {
-    uid: 4, hotkey: "5HpG9w8EBLe5XCrbczpwq5TSXvedjrBGCwqxK1iQ7qUsSWFc", coldkey: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWA2MRQg3gKrUYgw6J9o",
-    role: "miner", stake: 620.1, registration_block: 3_240_000, blocks_since_registration: 8_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 48,
-    scores: { composite: 0.756, success: 0.80, cost: 0.71, latency: 0.74, reliability: 0.85 },
-    score_history: generateScoreHistory(0.756, 0.12, 100), weight: 0.112, weight_capped: false,
+    uid: 9, hotkey: "5F1Dq8XweDtaAmyTwu2DfazrjwJnvGBoSRp7ZDbfsEZz1tnA", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 14.59, registration_block: 6_800_600, blocks_since_registration: 3_500,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 64,
+    scores: { composite: 0.771, success: 0.83, cost: 0.72, latency: 0.71, reliability: 0.86 },
+    score_history: generateScoreHistory(0.771, 0.11, 100), weight: 0.114, weight_capped: false,
     subnet_stats: {
-      sn1: { avg_cost: 0.0012, avg_latency: 0.55, reliability: 0.90, observations: 30 },
-      sn4: { avg_cost: 0.0035, avg_latency: 1.4, reliability: 0.85, observations: 18 },
+      sn1: { avg_cost: 0.0012, avg_latency: 0.53, reliability: 0.90, observations: 38 },
+      sn4: { avg_cost: 0.0033, avg_latency: 1.35, reliability: 0.86, observations: 26 },
     },
     recent_workflows: [],
   },
   {
-    uid: 5, hotkey: "5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSneWj6VRnhk", coldkey: "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-    role: "miner", stake: 510.3, registration_block: 3_243_000, blocks_since_registration: 5_000,
-    immunity_active: true, immunity_blocks_remaining: 0, tasks_seen: 12,
-    scores: { composite: 0.634, success: 0.72, cost: 0.65, latency: 0.58, reliability: 0.70 },
-    score_history: generateScoreHistory(0.634, 0.15, 12), weight: 0.062, weight_capped: false,
-    subnet_stats: {
-      sn1: { avg_cost: 0.0013, avg_latency: 0.60, reliability: 0.85, observations: 12 },
-    },
-    recent_workflows: [],
-  },
-  {
-    uid: 6, hotkey: "5Ew3MyB15VprZrjQVkpDGq7BFYB3TsRXyoYuKSAdBGJe3me6", coldkey: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
-    role: "miner", stake: 445.0, registration_block: 3_230_000, blocks_since_registration: 18_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 55,
-    scores: { composite: 0.721, success: 0.78, cost: 0.68, latency: 0.69, reliability: 0.82 },
-    score_history: generateScoreHistory(0.721, 0.11, 100), weight: 0.105, weight_capped: false,
+    uid: 6, hotkey: "5DyhnBtsNdTgnGZEeWs3bwFF33e3tLHNRzCUcWUJKiutpX1C", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 11.73, registration_block: 6_799_400, blocks_since_registration: 4_700,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 58,
+    scores: { composite: 0.743, success: 0.80, cost: 0.69, latency: 0.68, reliability: 0.83 },
+    score_history: generateScoreHistory(0.743, 0.12, 100), weight: 0.106, weight_capped: false,
     subnet_stats: {
       sn1: { avg_cost: 0.0011, avg_latency: 0.51, reliability: 0.88, observations: 35 },
-      sn4: { avg_cost: 0.0033, avg_latency: 1.35, reliability: 0.80, observations: 20 },
+      sn4: { avg_cost: 0.0034, avg_latency: 1.38, reliability: 0.82, observations: 23 },
     },
     recent_workflows: [],
   },
   {
-    uid: 7, hotkey: "5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM", coldkey: "5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSneWj6VRnhk",
-    role: "miner", stake: 380.7, registration_block: 3_235_000, blocks_since_registration: 13_000,
-    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 41,
-    scores: { composite: 0.689, success: 0.75, cost: 0.62, latency: 0.66, reliability: 0.78 },
-    score_history: generateScoreHistory(0.689, 0.13, 100), weight: 0.095, weight_capped: false,
+    uid: 7, hotkey: "5GrjCoBdoXh6XZkGrnLCWbLonM8RZEwsnhqHEJqRM2YN98Sk", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 9.64, registration_block: 6_799_800, blocks_since_registration: 4_300,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 52,
+    scores: { composite: 0.718, success: 0.78, cost: 0.66, latency: 0.65, reliability: 0.80 },
+    score_history: generateScoreHistory(0.718, 0.13, 100), weight: 0.098, weight_capped: false,
     subnet_stats: {
-      sn4: { avg_cost: 0.0034, avg_latency: 1.25, reliability: 0.82, observations: 41 },
+      sn4: { avg_cost: 0.0035, avg_latency: 1.30, reliability: 0.84, observations: 52 },
     },
     recent_workflows: [],
   },
   {
-    uid: 8, hotkey: "5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw", coldkey: "5Ew3MyB15VprZrjQVkpDGq7BFYB3TsRXyoYuKSAdBGJe3me6",
-    role: "miner", stake: 290.4, registration_block: 3_244_000, blocks_since_registration: 4_000,
-    immunity_active: true, immunity_blocks_remaining: 1_000, tasks_seen: 8,
-    scores: { composite: 0.542, success: 0.60, cost: 0.55, latency: 0.48, reliability: 0.65 },
-    score_history: generateScoreHistory(0.542, 0.18, 8), weight: 0.038, weight_capped: false,
+    uid: 8, hotkey: "5GxyEtrJNxHD1S3E7BEgS4HgpzcQZc1QpzS8F4DyWZxniiGs", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 8.06, registration_block: 6_800_200, blocks_since_registration: 3_900,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 45,
+    scores: { composite: 0.691, success: 0.75, cost: 0.63, latency: 0.62, reliability: 0.78 },
+    score_history: generateScoreHistory(0.691, 0.14, 100), weight: 0.088, weight_capped: false,
     subnet_stats: {
-      sn1: { avg_cost: 0.0014, avg_latency: 0.65, reliability: 0.78, observations: 8 },
+      sn1: { avg_cost: 0.0013, avg_latency: 0.58, reliability: 0.85, observations: 28 },
+      sn4: { avg_cost: 0.0036, avg_latency: 1.42, reliability: 0.78, observations: 17 },
+    },
+    recent_workflows: [],
+  },
+  {
+    uid: 10, hotkey: "5HHWx8iQYEmg8dThTjdUYUs568Qt2bvEgixNxSggBnHk1BKZ", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 6.84, registration_block: 6_801_000, blocks_since_registration: 3_100,
+    immunity_active: true, immunity_blocks_remaining: 1_900, tasks_seen: 18,
+    scores: { composite: 0.652, success: 0.72, cost: 0.60, latency: 0.58, reliability: 0.74 },
+    score_history: generateScoreHistory(0.652, 0.15, 18), weight: 0.068, weight_capped: false,
+    subnet_stats: {
+      sn1: { avg_cost: 0.0014, avg_latency: 0.62, reliability: 0.82, observations: 18 },
+    },
+    recent_workflows: [],
+  },
+  {
+    uid: 11, hotkey: "5FqZHjZb3fNsAj7VzvNyxjvavepB7REMbsv8E5QViB7PML8L", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 5.88, registration_block: 6_801_400, blocks_since_registration: 2_700,
+    immunity_active: true, immunity_blocks_remaining: 2_300, tasks_seen: 12,
+    scores: { composite: 0.608, success: 0.68, cost: 0.57, latency: 0.54, reliability: 0.70 },
+    score_history: generateScoreHistory(0.608, 0.16, 12), weight: 0.052, weight_capped: false,
+    subnet_stats: {
+      sn1: { avg_cost: 0.0015, avg_latency: 0.65, reliability: 0.78, observations: 12 },
+    },
+    recent_workflows: [],
+  },
+  {
+    uid: 2, hotkey: "5H1MrhNSaBJCMsoNNf6KnzA5HG8VVPAsH1JbSvFwjbSp1iaw", coldkey: MINER_COLDKEY,
+    role: "miner", stake: 1.11, registration_block: 6_797_800, blocks_since_registration: 6_300,
+    immunity_active: false, immunity_blocks_remaining: 0, tasks_seen: 8,
+    scores: { composite: 0.558, success: 0.62, cost: 0.52, latency: 0.50, reliability: 0.66 },
+    score_history: generateScoreHistory(0.558, 0.18, 8), weight: 0.040, weight_capped: false,
+    subnet_stats: {
+      sn1: { avg_cost: 0.0016, avg_latency: 0.68, reliability: 0.74, observations: 8 },
     },
     recent_workflows: [],
   },
 ];
 
-// ── Validator Profiles ────────────────────────────────────────────
+// ── Validator Profiles (3 validators — UIDs 1, 12, 13) ───────────
+
+const VALI_COLDKEY = "5GWjFybcbmdHArkFQZAVZhyz1My1WgqNqGKzRrHML1pHpbG1";
 
 export const mockValidators: ValidatorProfile[] = [
-  { uid: 100, hotkey: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWA2MRQg3gKrUYgw6J9o", coldkey: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", role: "validator", stake: 15_200, vtrust: 0.95, last_weight_set_block: 3_247_500, scoring_version: "1.0.0", benchmark_version: "v1" },
-  { uid: 101, hotkey: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", coldkey: "5HpG9w8EBLe5XCrbczpwq5TSXvedjrBGCwqxK1iQ7qUsSWFc", role: "validator", stake: 12_800, vtrust: 0.91, last_weight_set_block: 3_247_480, scoring_version: "1.0.0", benchmark_version: "v1" },
-  { uid: 102, hotkey: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", coldkey: "5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM", role: "validator", stake: 9_500, vtrust: 0.87, last_weight_set_block: 3_247_450, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 1, hotkey: "5GYi8aRkGCqQH8YScK4yYDkfZx6DtLVz3G5WJigwwbennZz8", coldkey: VALI_COLDKEY, role: "validator", stake: 626.61, vtrust: 0.95, last_weight_set_block: 6_804_000, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 12, hotkey: "5EJTJaqfvQovvEKVssXQ6bAfYbJKw71NtktBtHhz1EAiLwaF", coldkey: VALI_COLDKEY, role: "validator", stake: 14.77, vtrust: 0.91, last_weight_set_block: 6_803_980, scoring_version: "1.0.0", benchmark_version: "v1" },
+  { uid: 13, hotkey: "5CyPsnqJBnZJgwHvPw9rbvagAzNU7VmdBk5juPyGmLD694Qw", coldkey: VALI_COLDKEY, role: "validator", stake: 10.05, vtrust: 0.87, last_weight_set_block: 6_803_950, scoring_version: "1.0.0", benchmark_version: "v1" },
 ];
 
 // ── Network Stats ─────────────────────────────────────────────────
 
 export const mockNetworkStats: NetworkStats = {
-  current_block: 3_248_000,
-  current_tempo: 9022,
-  tasks_this_tempo: 24,
-  active_miners: 8,
+  current_block: 6_804_100,
+  current_tempo: 123,
+  tasks_this_tempo: 28,
+  active_miners: 10,
   active_validators: 3,
-  tasks_evaluated: 1_847,
+  tasks_evaluated: 2_140,
 };
 
 // ── Audit Flags ───────────────────────────────────────────────────
 
 export const mockAuditFlags: AuditFlag[] = [
-  { uid: 7, block: 3_247_800, score: 0.89, previous_avg: 0.52, jump_percent: 71.2, message: "Score jump >50% from rolling average" },
-  { uid: 5, block: 3_247_600, score: 0.78, previous_avg: 0.45, jump_percent: 73.3, message: "Score jump >50% — new miner in warmup" },
-  { uid: 4, block: 3_247_200, score: 0.91, previous_avg: 0.58, jump_percent: 56.9, message: "Score jump >50% from rolling average" },
+  { uid: 7, block: 6_803_800, score: 0.89, previous_avg: 0.52, jump_percent: 71.2, message: "Score jump >50% from rolling average" },
+  { uid: 9, block: 6_803_600, score: 0.78, previous_avg: 0.45, jump_percent: 73.3, message: "Score jump >50% — new miner in warmup" },
+  { uid: 5, block: 6_803_200, score: 0.91, previous_avg: 0.58, jump_percent: 56.9, message: "Score jump >50% from rolling average" },
 ];
 
 // ── Workflow Plans ────────────────────────────────────────────────
@@ -238,24 +265,24 @@ const ragPlan: WorkflowPlan = {
 
 export const mockWorkflowResponses: Record<string, MinerResponse[]> = {
   code_001: [
-    { miner_uid: 1, hotkey: "5FHneW46...694ty", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.007, total_estimated_latency: 3.2, confidence: 0.92, reasoning: "Two-phase approach: parallel code gen + test gen on SN4, then validate on SN1. Retry on code gen for reliability.", composite_score: 0.847 },
-    { miner_uid: 2, hotkey: "5FLSigC9...cS59Y", scoring_version: "1.0.0", workflow_plan: { ...codePlan, nodes: codePlan.nodes.map(n => ({ ...n, estimated_cost: n.estimated_cost * 1.2 })) }, total_estimated_cost: 0.0084, total_estimated_latency: 3.8, confidence: 0.87, reasoning: "Sequential pipeline with higher cost estimates for safety margin.", composite_score: 0.812 },
-    { miner_uid: 3, hotkey: "5DAAnrj7...TXFy", scoring_version: "1.0.0", workflow_plan: { nodes: codePlan.nodes.slice(0, 2), edges: [codePlan.edges[0]] }, total_estimated_cost: 0.004, total_estimated_latency: 1.7, confidence: 0.78, reasoning: "Minimal approach: analyze then generate. Fast and cheap.", composite_score: 0.793 },
-    { miner_uid: 6, hotkey: "5Ew3MyB1...3me6", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.009, total_estimated_latency: 4.1, confidence: 0.71, reasoning: "Full pipeline with validation. Conservative cost estimates.", composite_score: 0.721 },
+    { miner_uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.007, total_estimated_latency: 3.2, confidence: 0.92, reasoning: "Two-phase approach: parallel code gen + test gen on SN4, then validate on SN1. Retry on code gen for reliability.", composite_score: 0.862 },
+    { miner_uid: 4, hotkey: "5Cu1eA4n2ggvZRp5BD9GmJUmk6bhvwzcPAMAHjndY29ZEJ9G", scoring_version: "1.0.0", workflow_plan: { ...codePlan, nodes: codePlan.nodes.map(n => ({ ...n, estimated_cost: n.estimated_cost * 1.2 })) }, total_estimated_cost: 0.0084, total_estimated_latency: 3.8, confidence: 0.87, reasoning: "Sequential pipeline with higher cost estimates for safety margin.", composite_score: 0.824 },
+    { miner_uid: 5, hotkey: "5DyTRnje55b39a5QKLvp8MiDPeJoAitdKzDZ3rnjtW3NkLzq", scoring_version: "1.0.0", workflow_plan: { nodes: codePlan.nodes.slice(0, 2), edges: [codePlan.edges[0]] }, total_estimated_cost: 0.004, total_estimated_latency: 1.7, confidence: 0.78, reasoning: "Minimal approach: analyze then generate. Fast and cheap.", composite_score: 0.798 },
+    { miner_uid: 6, hotkey: "5DyhnBtsNdTgnGZEeWs3bwFF33e3tLHNRzCUcWUJKiutpX1C", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.009, total_estimated_latency: 4.1, confidence: 0.71, reasoning: "Full pipeline with validation. Conservative cost estimates.", composite_score: 0.743 },
   ],
   rag_001: [
-    { miner_uid: 1, hotkey: "5FHneW46...694ty", scoring_version: "1.0.0", workflow_plan: ragPlan, total_estimated_cost: 0.004, total_estimated_latency: 1.8, confidence: 0.94, reasoning: "Retrieve context → generate → fact-check pipeline.", composite_score: 0.860 },
-    { miner_uid: 2, hotkey: "5FLSigC9...cS59Y", scoring_version: "1.0.0", workflow_plan: ragPlan, total_estimated_cost: 0.005, total_estimated_latency: 2.1, confidence: 0.88, reasoning: "RAG pipeline with extended context retrieval.", composite_score: 0.825 },
-    { miner_uid: 4, hotkey: "5HpG9w8E...SWFc", scoring_version: "1.0.0", workflow_plan: { nodes: ragPlan.nodes.slice(0, 2), edges: [ragPlan.edges[0]] }, total_estimated_cost: 0.003, total_estimated_latency: 1.3, confidence: 0.80, reasoning: "Direct retrieval and generation, skip fact-check for speed.", composite_score: 0.756 },
+    { miner_uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", scoring_version: "1.0.0", workflow_plan: ragPlan, total_estimated_cost: 0.004, total_estimated_latency: 1.8, confidence: 0.94, reasoning: "Retrieve context → generate → fact-check pipeline.", composite_score: 0.870 },
+    { miner_uid: 4, hotkey: "5Cu1eA4n2ggvZRp5BD9GmJUmk6bhvwzcPAMAHjndY29ZEJ9G", scoring_version: "1.0.0", workflow_plan: ragPlan, total_estimated_cost: 0.005, total_estimated_latency: 2.1, confidence: 0.88, reasoning: "RAG pipeline with extended context retrieval.", composite_score: 0.835 },
+    { miner_uid: 9, hotkey: "5F1Dq8XweDtaAmyTwu2DfazrjwJnvGBoSRp7ZDbfsEZz1tnA", scoring_version: "1.0.0", workflow_plan: { nodes: ragPlan.nodes.slice(0, 2), edges: [ragPlan.edges[0]] }, total_estimated_cost: 0.003, total_estimated_latency: 1.3, confidence: 0.80, reasoning: "Direct retrieval and generation, skip fact-check for speed.", composite_score: 0.771 },
   ],
   agent_001: [
-    { miner_uid: 1, hotkey: "5FHneW46...694ty", scoring_version: "1.0.0", workflow_plan: { nodes: [{ id: "step_1", subnet: "sn1", action: "compute", estimated_cost: 0.001, estimated_latency: 0.5, tier: 0 }, { id: "step_2", subnet: "sn1", action: "verify", estimated_cost: 0.001, estimated_latency: 0.3, tier: 1 }], edges: [{ from: "step_1", to: "step_2", data_ref: "${step_1.output.result}" }] }, total_estimated_cost: 0.002, total_estimated_latency: 0.8, confidence: 0.96, reasoning: "Simple compute + verify for arithmetic.", composite_score: 0.890 },
+    { miner_uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", scoring_version: "1.0.0", workflow_plan: { nodes: [{ id: "step_1", subnet: "sn1", action: "compute", estimated_cost: 0.001, estimated_latency: 0.5, tier: 0 }, { id: "step_2", subnet: "sn1", action: "verify", estimated_cost: 0.001, estimated_latency: 0.3, tier: 1 }], edges: [{ from: "step_1", to: "step_2", data_ref: "${step_1.output.result}" }] }, total_estimated_cost: 0.002, total_estimated_latency: 0.8, confidence: 0.96, reasoning: "Simple compute + verify for arithmetic.", composite_score: 0.890 },
   ],
   data_001: [
-    { miner_uid: 2, hotkey: "5FLSigC9...cS59Y", scoring_version: "1.0.0", workflow_plan: { nodes: [{ id: "step_1", subnet: "sn1", action: "parse_csv", estimated_cost: 0.001, estimated_latency: 0.3, tier: 0 }, { id: "step_2", subnet: "sn1", action: "transform_to_json", estimated_cost: 0.001, estimated_latency: 0.3, tier: 1 }], edges: [{ from: "step_1", to: "step_2", data_ref: "${step_1.output.parsed}" }] }, total_estimated_cost: 0.002, total_estimated_latency: 0.6, confidence: 0.95, reasoning: "Parse then transform pipeline.", composite_score: 0.870 },
+    { miner_uid: 4, hotkey: "5Cu1eA4n2ggvZRp5BD9GmJUmk6bhvwzcPAMAHjndY29ZEJ9G", scoring_version: "1.0.0", workflow_plan: { nodes: [{ id: "step_1", subnet: "sn1", action: "parse_csv", estimated_cost: 0.001, estimated_latency: 0.3, tier: 0 }, { id: "step_2", subnet: "sn1", action: "transform_to_json", estimated_cost: 0.001, estimated_latency: 0.3, tier: 1 }], edges: [{ from: "step_1", to: "step_2", data_ref: "${step_1.output.parsed}" }] }, total_estimated_cost: 0.002, total_estimated_latency: 0.6, confidence: 0.95, reasoning: "Parse then transform pipeline.", composite_score: 0.870 },
   ],
   synthetic_001: [
-    { miner_uid: 1, hotkey: "5FHneW46...694ty", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.007, total_estimated_latency: 3.2, confidence: 0.91, reasoning: "Full code generation pipeline with tests.", composite_score: 0.840 },
+    { miner_uid: 3, hotkey: "5DoRe6Zic5PUfnPUno3z8MngQEHvgqEMWhfFMEXB7wug9HsV", scoring_version: "1.0.0", workflow_plan: codePlan, total_estimated_cost: 0.007, total_estimated_latency: 3.2, confidence: 0.91, reasoning: "Full code generation pipeline with tests.", composite_score: 0.855 },
   ],
 };
 
@@ -272,7 +299,7 @@ export const mockExecutionResults: Record<string, ExecutionResult> = {
     final_output: "def merge_sorted(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i]); i += 1\n        else:\n            result.append(b[j]); j += 1\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result",
     total_cost: 0.0064,
     total_latency: 2.92,
-    scores: { composite: 0.847, success: 0.92, cost: 0.78, latency: 0.81, reliability: 0.95 },
+    scores: { composite: 0.862, success: 0.93, cost: 0.80, latency: 0.83, reliability: 0.96 }, // miner_uid: 3
   },
   rag_001: {
     steps: [
@@ -283,7 +310,7 @@ export const mockExecutionResults: Record<string, ExecutionResult> = {
     final_output: "Bittensor uses Yuma Consensus, a stake-weighted agreement mechanism where validators assign scores to miners based on the quality of their work. Unlike Proof of Work (PoW) which requires miners to expend computational energy solving cryptographic puzzles, Yuma Consensus rewards useful machine learning work evaluated by validator peers.",
     total_cost: 0.0035,
     total_latency: 1.63,
-    scores: { composite: 0.860, success: 0.94, cost: 0.65, latency: 0.84, reliability: 0.98 },
+    scores: { composite: 0.870, success: 0.94, cost: 0.65, latency: 0.84, reliability: 0.98 },
   },
 };
 

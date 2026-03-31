@@ -133,10 +133,10 @@ btcli subnet metagraph --netuid 26 --subtensor.network test
 ```
 
 - **14 registered nodes** — 10 miners + 3 validators + 1 owner
-- Active serving: 1 validator (UID 1), 1 miner (UID 2)
-- Scoring version: `1.0.0`
-- Execution mode: `CSWON_MOCK_EXEC=true`
-- Emissions flowing to active participants
+- **All 13 non-owner nodes actively serving** on `136.185.198.230`
+- Total stake: **3.07k ב** · Total emission: **296.02 ב**
+- TAO Pool: τ 321.06 · Rate: 61,411 τ/ב
+- Scoring version: `1.0.0` · Execution mode: `CSWON_MOCK_EXEC=true`
 
 [Full testnet evidence →](docs/7.1-testnet-evidence.md) · [Validator logs →](docs/7.2-validator-logs.md) · [Incentive verification →](docs/7.3-incentive-verification.md)
 

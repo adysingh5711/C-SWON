@@ -115,7 +115,7 @@ export function mapNeuronToMiner(n: TaostatsNeuron): MinerProfile {
     registration_block: n.registered_at_block,
     blocks_since_registration: n.block_number - n.registered_at_block,
     immunity_active: n.is_immunity_period,
-    immunity_blocks_remaining: n.is_immunity_period ? 15000 - (n.block_number - n.registered_at_block) : 0,
+    immunity_blocks_remaining: n.is_immunity_period ? Math.max(0, 5000 - (n.block_number - n.registered_at_block)) : 0,
     tasks_seen: 0,
     scores: { ...CHAIN_ONLY_SCORES, composite: incentive },
     score_history: [],
