@@ -74,10 +74,21 @@ const config: Config = {
     ],
   ],
 
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: { rel: 'icon', type: 'image/svg+xml', href: '/C-SWON/img/favicon.svg' },
+    },
+    {
+      tagName: 'link',
+      attributes: { rel: 'apple-touch-icon', href: '/C-SWON/img/apple-touch-icon.png' },
+    },
+  ],
+
   themeConfig: {
     image: 'img/cswon-social-card.png',
     colorMode: {
-      defaultMode: 'dark',
+      defaultMode: 'light',
       respectPrefersColorScheme: true,
     },
     mermaid: {

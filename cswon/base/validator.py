@@ -371,15 +371,17 @@ class BaseValidatorNeuron(BaseNeuron):
             if not self.metagraph.validator_permit[uid]
         ]
 
-        # On local devnets all UIDs may have vpermit; treat non-self serving UIDs as miners
-        if not miner_uids and self.config.subtensor.network == "local":
+        # On small testnets/devnets all UIDs may have vpermit; treat non-self
+        # serving UIDs as miners so weights can still be submitted.
+        if not miner_uids and self.config.subtensor.network in ("local", "test"):
             miner_uids = [
                 uid for uid in range(int(self.metagraph.n))
                 if uid != self.uid and self.metagraph.axons[uid].is_serving
             ]
             if miner_uids:
                 bt.logging.warning(
-                    f"Local chain: all UIDs have vpermit, using serving non-self UIDs as miners: {miner_uids}"
+                    f"All UIDs have vpermit on {self.config.subtensor.network}; "
+                    f"using serving non-self UIDs as miners: {miner_uids}"
                 )
 
         if hasattr(self, "score_aggregator") and miner_uids:
