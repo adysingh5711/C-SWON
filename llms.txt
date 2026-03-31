@@ -1,0 +1,16 @@
+# C-SWON — Cross-Subnet Workflow Orchestration
+
+> Zapier for Subnets — The Intelligence Layer for Multi-Subnet Composition on Bittensor.
+
+C-SWON (Cross-Subnet Workflow Orchestration Network) is a protocol designed to enable seamless, automated workflows across different Bittensor subnets. It acts as the "connective tissue" that allows developers to compose complex intelligence tasks by chaining specialized subnet services together.
+
+## Core Features
+- **Cross-Subnet Composition**: Automate processes that leverage multiple subnet types.
+- **Unified Intelligence Layer**: A single entry point for complex multi-subnet workflows.
+- **Bittensor Native**: Built specifically for the Bittensor ecosystem to enhance interoperability.
+- **Scalable Orchestration**: Handles complex task chaining with high reliability.
+
+## Key Links
+- [C-SWON Website](https://c-swon.vercel.app)
+- [Documentation](https://c-swon.vercel.app/docs)
+- [GitHub Repository](https://github.com/adysingh5711/Cross-Subnet-Workflow-Orchestration-Network-SWON-)
