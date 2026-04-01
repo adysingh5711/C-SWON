@@ -818,3 +818,78 @@ code {
 .search-bar-shortcut {
   font-family: "DM Mono", monospace;
 }
+
+/* ── ZoomImage Component ────────────────────────────────────── */
+
+.zoom-image-thumbnail-container {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--ifm-hr);
+  background-color: var(--grey-100);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0.5rem 0;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .zoom-image-thumbnail-container {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #1a1d22;
+}
+
+.zoom-image-thumbnail-container:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-color: var(--ifm-color-primary);
+  transform: translateY(-2px);
+}
+
+/* Ensure images in the Zoom component fill their container properly */
+.zoom-image-thumbnail-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* High z-index for the overlay to be above docusaurus navbar/sidebar */
+.zoom-image-overlay {
+  z-index: 9999 !important;
+}
+
+/* Styling for the proof-of-work table to look like a gallery */
+.proof-gallery table {
+  background: transparent !important;
+  border: none !important;
+  border-collapse: separate;
+  border-spacing: 16px;
+  width: 100%;
+}
+
+.proof-gallery thead {
+  display: none !important;
+}
+
+.proof-gallery tr {
+  border: none !important;
+  background: transparent !important;
+}
+
+.proof-gallery td {
+  border: none !important;
+  padding: 0 !important;
+  vertical-align: top;
+  text-align: center;
+}
+
+[data-theme="dark"] .proof-gallery td {
+  background: transparent !important;
+}
+
+.proof-gallery-caption {
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 12px;
+  display: block;
+  font-family: var(--ifm-font-family-base);
+  color: var(--text-primary);
+}
