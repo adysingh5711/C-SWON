@@ -1,0 +1,254 @@
+[
+  {
+    "task_id": "sample_code_001",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a Python function `merge_sorted(a, b)` that merges two sorted lists into one sorted list without using built-in sort.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 15,
+      "allowed_subnets": ["sn1", "sn4"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5},
+      "sn4": {"type": "code_generation", "avg_cost": 0.003, "avg_latency": 1.2}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_merge():\n    from solution import merge_sorted\n    assert merge_sorted([1,3,5],[2,4,6]) == [1,2,3,4,5,6]\n    assert merge_sorted([],[1]) == [1]\n    assert merge_sorted([],[]) == []",
+      "expected_output_score_range": [0.6, 1.0],
+      "expected_patterns": ["def merge_sorted", "while", "append"],
+      "notes": "Correct O(n+m) merge pointer algorithm should score >=0.8 on test pass rate."
+    }
+  },
+  {
+    "task_id": "sample_code_002",
+    "task_type": "code",
+    "status": "active",
+    "description": "Implement a binary search function `binary_search(lst, target)` that returns the index of target in sorted list lst, or -1 if not found.",
+    "quality_criteria": {
+      "min_test_pass_rate": 0.8
+    },
+    "constraints": {
+      "max_budget_tao": 0.02,
+      "max_latency_seconds": 12,
+      "allowed_subnets": ["sn1", "sn4"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5},
+      "sn4": {"type": "code_generation", "avg_cost": 0.003, "avg_latency": 1.2}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "test_suite": "def test_binary_search():\n    from solution import binary_search\n    assert binary_search([1,3,5,7,9], 5) == 2\n    assert binary_search([1,3,5,7,9], 4) == -1\n    assert binary_search([], 1) == -1\n    assert binary_search([42], 42) == 0",
+      "expected_output_score_range": [0.7, 1.0],
+      "expected_patterns": ["def binary_search", "mid", "low", "high"],
+      "notes": "Standard O(log n) binary search. Correct implementation scores 1.0 on all 4 test cases."
+    }
+  },
+  {
+    "task_id": "sample_rag_001",
+    "task_type": "rag",
+    "status": "active",
+    "description": "What is Bittensor's consensus mechanism and how does Yuma Consensus differ from standard Proof-of-Work?",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": ["sn1"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Bittensor uses Yuma Consensus, a stake-weighted agreement mechanism where validators assign scores to miners based on the quality of their outputs. Unlike Proof-of-Work, which requires energy-intensive computation to solve arbitrary puzzles, Yuma Consensus rewards useful machine-learning or computational work evaluated by validator peers who hold stake in the network.",
+      "expected_output_score_range": [0.2, 1.0],
+      "notes": "Minimum acceptable ROUGE-L F1 is 0.30. A response mentioning 'stake-weighted', 'validators', and 'miners' should achieve this threshold."
+    }
+  },
+  {
+    "task_id": "sample_rag_002",
+    "task_type": "rag",
+    "status": "active",
+    "description": "Explain the role of subnets in the Bittensor ecosystem and how incentives flow between subnet owners, validators, and miners.",
+    "quality_criteria": {
+      "min_rouge_l": 0.3
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 10,
+      "allowed_subnets": ["sn1"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "reference_answer": "Subnets are specialized sub-networks within Bittensor, each defining its own task domain and scoring rules. Subnet owners set hyperparameters and emit Alpha tokens; validators query miners and set weights based on performance; miners compete to produce the best outputs and earn emissions proportional to their weight in the subnet.",
+      "expected_output_score_range": [0.25, 1.0],
+      "notes": "ROUGE-L: any answer mentioning subnet owners, validators, miners, and emissions should clear the 0.30 threshold."
+    }
+  },
+  {
+    "task_id": "sample_agent_001",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Given a customer support ticket 'I can't log into my account', produce a structured triage response that identifies the issue category, suggests 2 resolution steps, and confirms ticket priority.",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.75
+    },
+    "constraints": {
+      "max_budget_tao": 0.015,
+      "max_latency_seconds": 12,
+      "allowed_subnets": ["sn1", "sn18"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5},
+      "sn18": {"type": "inference", "avg_cost": 0.0005, "avg_latency": 0.3}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {"type": "keyword", "text": "login"},
+        {"type": "keyword", "text": "password"},
+        {"type": "keyword", "text": "priority"},
+        {"type": "regex", "pattern": "step \\d|resolution|recommend"}
+      ],
+      "expected_output_score_range": [0.5, 1.0],
+      "notes": "A complete triage response hitting all 4 criteria (login mention, password mention, priority mention, resolution steps) scores 1.0. Partial responses receive partial credit."
+    }
+  },
+  {
+    "task_id": "sample_agent_002",
+    "task_type": "agent",
+    "status": "active",
+    "description": "Summarize the following text and output a JSON object with keys 'summary', 'sentiment', and 'key_topics'. Text: 'Bittensor is a decentralized machine learning protocol that creates a marketplace for AI model outputs. It uses a consensus mechanism to reward high-quality AI services.'",
+    "quality_criteria": {
+      "min_checklist_pass_rate": 0.75
+    },
+    "constraints": {
+      "max_budget_tao": 0.012,
+      "max_latency_seconds": 10,
+      "allowed_subnets": ["sn1"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "goal_checklist": [
+        {"type": "json_key", "text": "summary"},
+        {"type": "json_key", "text": "sentiment"},
+        {"type": "json_key", "text": "key_topics"},
+        {"type": "keyword", "text": "bittensor"}
+      ],
+      "expected_output_score_range": [0.5, 1.0],
+      "notes": "Output must be parseable JSON containing 'summary', 'sentiment', and 'key_topics' keys plus mention of bittensor. 4/4 = 1.0 score."
+    }
+  },
+  {
+    "task_id": "sample_data_transform_001",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Transform the following flat record into a nested JSON structure. Input: {\"first_name\": \"Alice\", \"last_name\": \"Smith\", \"city\": \"New York\", \"country\": \"USA\"}. Output must have keys: 'name' (object with 'first' and 'last') and 'location' (object with 'city' and 'country').",
+    "quality_criteria": {
+      "min_schema_match": 1.0
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 8,
+      "allowed_subnets": ["sn1", "sn4"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5},
+      "sn4": {"type": "code_generation", "avg_cost": 0.003, "avg_latency": 1.2}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": {
+        "name": {"first": "Alice", "last": "Smith"},
+        "location": {"city": "New York", "country": "USA"}
+      },
+      "expected_output_score_range": [0.0, 1.0],
+      "notes": "Exact structural match scores 1.0. Partial key match gives partial credit. Scoring uses '_normalize()' which sorts keys and preserves value types."
+    }
+  },
+  {
+    "task_id": "sample_data_transform_002",
+    "task_type": "data_transform",
+    "status": "active",
+    "description": "Given a list of products as JSON, compute and return the total price as a JSON object. Input: [{\"name\": \"apple\", \"price\": 1.5, \"qty\": 3}, {\"name\": \"banana\", \"price\": 0.5, \"qty\": 6}]. Return: {\"total\": 7.5}",
+    "quality_criteria": {
+      "min_schema_match": 1.0
+    },
+    "constraints": {
+      "max_budget_tao": 0.01,
+      "max_latency_seconds": 8,
+      "allowed_subnets": ["sn1", "sn4"]
+    },
+    "available_tools": {
+      "sn1": {"type": "text_generation", "avg_cost": 0.001, "avg_latency": 0.5},
+      "sn4": {"type": "code_generation", "avg_cost": 0.003, "avg_latency": 1.2}
+    },
+    "routing_policy": {
+      "default": {
+        "miner_selection": "top_k_stake_weighted",
+        "top_k": 3,
+        "aggregation": "majority_vote"
+      }
+    },
+    "reference": {
+      "expected_output": {"total": 7.5},
+      "expected_output_score_range": [0.0, 1.0],
+      "notes": "3*1.5 + 6*0.5 = 7.5. Exact numeric match required. Partial credit not applicable for single-key output."
+    }
+  }
+]

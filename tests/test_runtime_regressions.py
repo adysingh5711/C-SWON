@@ -44,8 +44,8 @@ class TestRuntimeRegressions(unittest.TestCase):
 
         fake_axon = MagicMock()
         fake_axon.external_ip = "127.0.0.1"
-        fake_axon.port = 8092
-        fake_axon.external_port = 8092
+        fake_axon.port = 8111
+        fake_axon.external_port = 8111
         fake_axon.info = SimpleNamespace(description=None)
 
         with patch("cswon.base.validator.bt.Axon", return_value=fake_axon), patch(

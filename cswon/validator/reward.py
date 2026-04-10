@@ -419,11 +419,20 @@ class ScoreAggregator:
         self.tasks_seen[resolved_uid] += 1
 
     def get_average_score(self, miner_uid: int) -> float:
-        """Get equal-weight average score for a miner."""
+        """Get equal-weight average score for a miner.
+
+        Returns 0.0 if the miner has no history OR if their rolling average
+        sits at or below 0.05 — indicative of a window full of hard failures.
+        This floor prevents a persistently broken miner from receiving a
+        nonzero weight purely from averaging a string of near-zero scores.
+        (Audit fix: §2 Incentive Mechanism, slash/blacklist gap.)
+        """
         window = self.score_windows.get(miner_uid, [])
         if not window:
             return 0.0
-        return sum(window) / len(window)
+        avg = sum(window) / len(window)
+        # Explicit zero-weight floor for sustained failure
+        return avg if avg > 0.05 else 0.0
 
     def get_normalised_weights(
         self, miner_uids: List[int]

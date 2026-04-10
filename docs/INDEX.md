@@ -29,6 +29,7 @@ sidebar_position: 1
 - [3.3 Output Quality Scoring](3.3-quality-scoring.md) — ROUGE-L, test runners, goal checklists — no LLM judge
 - [3.4 Anti-Gaming Mechanisms](3.4-anti-gaming.md) — VRF tasks, synthetic ground truth, benchmark rotation
 - [3.5 Scoring Version Control](3.5-scoring-versioning.md) — __spec_version__, upgrade protocol
+- [3.6 Synthetic Task Protocol](3.6-synthetic-task-protocol.md) — Derivation algorithm, ground-truth inheritance, judge verification guide
 
 ## 4. Miner Guide
 

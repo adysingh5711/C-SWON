@@ -19,13 +19,15 @@ Six-stage pipeline:
 """
 
 import asyncio
+import json
+import os
+import pathlib
+import random
 import threading
 import time
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
-import json
-import random
 
 import bittensor as bt
 import numpy as np
@@ -120,6 +122,25 @@ _score_history: Dict[int, deque] = defaultdict(lambda: deque(maxlen=10))
 _AUDIT_FLAG_MAX = 500  # cap in-memory list
 _audit_flags: deque = deque(maxlen=_AUDIT_FLAG_MAX)
 _audit_flags_lock = threading.Lock()
+
+# Disk persistence for audit flags — survives validator restarts (audit fix §4)
+_AUDIT_LOG_PATH = pathlib.Path(
+    os.environ.get("CSWON_AUDIT_LOG_PATH", "audit_flags.jsonl")
+)
+
+
+def _append_audit_flag(flag: dict) -> None:
+    """Append a single audit flag to the on-disk JSONL log (non-blocking).
+
+    Each line is a self-contained JSON object with a trailing newline,
+    making the file safe to tail/grep and trivially parseable.
+    Failures are logged as warnings rather than crashing the forward pass.
+    """
+    try:
+        with open(_AUDIT_LOG_PATH, "a") as fh:
+            fh.write(json.dumps(flag) + "\n")
+    except OSError as exc:
+        bt.logging.warning(f"Could not persist audit flag to {_AUDIT_LOG_PATH}: {exc}")
 
 
 # ── Monitoring HTTP Server (readme §3.6, issue 3.6) ────────────────────────
@@ -269,6 +290,8 @@ def _check_temporal_consistency(uid: int, score: float, current_block: int) -> N
             with _audit_flags_lock:
                 _audit_flags.append(flag)
                 # deque(maxlen=500) evicts oldest automatically — no pop(0) needed
+            # Persist to disk so flags survive validator restarts (audit fix §4)
+            _append_audit_flag(flag)
 
     history.append(score)
 

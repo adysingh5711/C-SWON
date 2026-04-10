@@ -171,12 +171,14 @@ python neurons/miner.py --netuid 26 --subtensor.network test \
 
 **Run a validator:**
 ```bash
-export CSWON_MOCK_EXEC=true
+export CSWON_MOCK_EXEC=false
 export CSWON_SYNTHETIC_SALT=$(python -c "import secrets; print(secrets.token_hex(32))")
 
 python neurons/validator.py --netuid 26 --subtensor.network test \
-  --wallet.name my_validator --wallet.hotkey default --axon.port 8092 --wandb.off
+  --wallet.name my_validator --wallet.hotkey default --axon.port 8111 --wandb.off
 ```
+
+> **Port note:** Use a port that does not conflict with any registered miner axon. On testnet, miners occupy ports 8091–8100; validators should use 8111+ (e.g. 8111, 8112, 8113).
 
 [Full miner guide →](docs/1.2-quickstart-miner.md) · [Full validator guide →](docs/1.3-quickstart-validator.md)
 
@@ -204,7 +206,7 @@ Full documentation: [`docs/`](docs/) directory · [Documentation website](https:
 |---|---|
 | **Getting Started** | [1.1 What is C-SWON?](docs/1.1-what-is-cswon.md) · [1.2 Miner Quickstart](docs/1.2-quickstart-miner.md) · [1.3 Validator Quickstart](docs/1.3-quickstart-validator.md) |
 | **Architecture** | [2.1 System Architecture](docs/2.1-architecture.md) · [2.2 Protocol](docs/2.2-protocol.md) · [2.3 DAG Execution](docs/2.3-dag-execution.md) |
-| **Incentive Design** | [3.1 Emissions](docs/3.1-emission-structure.md) · [3.2 Scoring](docs/3.2-scoring-formula.md) · [3.3 Quality](docs/3.3-quality-scoring.md) · [3.4 Anti-Gaming](docs/3.4-anti-gaming.md) · [3.5 Versioning](docs/3.5-scoring-versioning.md) |
+| **Incentive Design** | [3.1 Emissions](docs/3.1-emission-structure.md) · [3.2 Scoring](docs/3.2-scoring-formula.md) · [3.3 Quality](docs/3.3-quality-scoring.md) · [3.4 Anti-Gaming](docs/3.4-anti-gaming.md) · [3.5 Versioning](docs/3.5-scoring-versioning.md) · [3.6 Synthetic Protocol](docs/3.6-synthetic-task-protocol.md) |
 | **Miner Guide** | [4.1 Registration](docs/4.1-miner-registration.md) · [4.2 Workflow Plan](docs/4.2-workflow-plan.md) · [4.3 Lifecycle](docs/4.3-miner-lifecycle.md) · [4.4 Early Participation](docs/4.4-early-participation.md) |
 | **Validator Guide** | [5.1 Hardware](docs/5.1-validator-hardware.md) · [5.2 Pipeline](docs/5.2-evaluation-pipeline.md) · [5.3 Weights](docs/5.3-weight-submission.md) · [5.4 Governance](docs/5.4-benchmark-governance.md) · [5.5 Exec Pool](docs/5.5-exec-support-pool.md) · [5.6 Immunity](docs/5.6-immunity-warmup.md) |
 | **Deployment** | [6.1 Testnet](docs/6.1-running-on-testnet.md) · [6.2 Mainnet](docs/6.2-running-on-mainnet.md) · [6.3 Local](docs/6.3-running-on-staging.md) · [6.4 Local Deploy](docs/6.4-local-deploy.md) · [6.5 Testnet Deploy](docs/6.5-testnet-deploy.md) |
@@ -222,12 +224,14 @@ C-SWON/
 │   ├── protocol.py          # WorkflowSynapse — single source of truth
 │   ├── base/                # BaseValidator / BaseMiner abstract classes
 │   ├── validator/           # Scoring, execution, weight submission (3,035 LOC)
+│   │   └── benchmarks/      # Sample benchmark tasks for judge auditability (8 tasks)
 │   ├── miner/               # Subnet profiler, workflow planning
-│   ├── api/                 # External-facing HTTP endpoints
+│   ├── api/                 # External-facing HTTP utilities
+│   │   └── get_query_axons.py  # ping_uids(), get_query_api_nodes(), get_query_api_axons()
 │   └── utils/               # Shared helpers
 ├── neurons/                 # Entry points: validator.py, miner.py
-├── tests/                   # Unit + integration tests (9 test files)
-├── benchmarks/              # Versioned benchmark task datasets (v1.json)
+├── tests/                   # Unit + integration tests (10 test files)
+├── benchmarks/              # Versioned benchmark task datasets (v1.json, 60+ tasks)
 ├── docs/                    # Full numbered documentation (32 files)
 ├── frontend/                # Next.js dashboard (metagraph, DAG viewer, scores)
 ├── documentation_website/   # Docusaurus documentation site
