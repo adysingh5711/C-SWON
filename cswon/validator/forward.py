@@ -184,6 +184,33 @@ def _ensure_monitoring_server() -> None:
         _monitoring_started = True
 
 
+# ── Mock-exec startup warning ────────────────────────────────────────────────
+
+_mock_exec_warned = False
+
+
+def _warn_if_mock_exec() -> None:
+    """Emit a one-time WARNING when CSWON_MOCK_EXEC=true is active.
+
+    Fires on the first forward() call so the operator sees it in the validator
+    log immediately. The code scorer fallback (pattern-match instead of pytest)
+    is intentional for testnet bootstrap but must be disabled before mainnet.
+    """
+    global _mock_exec_warned
+    if _mock_exec_warned:
+        return
+    if os.environ.get("CSWON_MOCK_EXEC", "true").lower() == "true":
+        bt.logging.warning(
+            "\n"
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║  CSWON_MOCK_EXEC=true — code scorer is running in MOCK MODE ║\n"
+            "║  Real pytest/pycodestyle grading is DISABLED.               ║\n"
+            "║  Set CSWON_MOCK_EXEC=false for live graded execution.       ║\n"
+            "╚══════════════════════════════════════════════════════════════╝"
+        )
+    _mock_exec_warned = True
+
+
 def _get_effective_tempo(self) -> int:
     """
     Use the live subnet tempo when available and fall back to the static config.
@@ -308,6 +335,7 @@ async def forward(self):
     global _tasks_executed_this_tempo, _last_lifecycle_tempo
 
     _ensure_monitoring_server()
+    _warn_if_mock_exec()
 
     benchmark_tasks = _get_benchmark_tasks()
     tracker = self.lifecycle_tracker

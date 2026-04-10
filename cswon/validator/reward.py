@@ -135,7 +135,9 @@ def _score_code_quality(code_output: str, reference: dict) -> float:
 
     # Fallback: expected_patterns keyword check
     if not expected_patterns:
-        return 0.5
+        # No patterns to match against = no verifiable signal → score 0.0.
+        # Returning 0.5 here would grant unearned credit in mock mode.
+        return 0.0
     matches = sum(1 for p in expected_patterns if p in code_output)
     return matches / len(expected_patterns)
 
